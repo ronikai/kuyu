@@ -602,7 +602,7 @@ scene("game", (data = {}) => {
 
 	function buildTown() {
 		// ready-made Kenney town sample crop: houses, fences, flowers, trees
-		add([sprite("town_sample"), pos(0, 0), z(0)]);
+		add([sprite("town_sample_v3"), pos(0, 0), z(0)]);
 
 		const solid = (x, y, w, h, tag = "townsolid") => add([
 			rect(w, h), pos(x, y), anchor("center"),
@@ -621,6 +621,12 @@ scene("game", (data = {}) => {
 			[50, 42, 105, 84], [225, 60, 105, 64], [405, 72, 100, 68],
 			[50, 235, 110, 82], [570, 85, 110, 70], [570, 300, 120, 150],
 		]) solid(x, y, w, h, "house");
+
+		// tree trunks from the sample crop (canopy centres -> base collider)
+		for (const [x, y] of [
+			[264, 312], [338, 312], [522, 91], [485, 55],
+			[9, 165], [44, 211], [486, 137], [81, 174],
+		]) solid(x, y, 20, 24, "tree");
 
 		// soft lamp glow near the square
 		add([sprite("glow"), pos(20 * TILE + 8, 10 * TILE), anchor("center"), scale(1.1), opacity(0.2), z(800)]);
