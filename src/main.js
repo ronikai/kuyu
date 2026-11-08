@@ -42,6 +42,8 @@ const G = {
 	hasFlare: false,
 	flareCd: 0,
 	memories: 0,
+	collectedMemories: {},
+	openedChests: {},
 	hitStop: 0,
 	ambient: null,
 	heartTimer: 0,
@@ -64,6 +66,8 @@ function resetRun() {
 	G.hasFlare = false;
 	G.flareCd = 0;
 	G.memories = 0;
+	G.collectedMemories = {};
+	G.openedChests = {};
 	G.hitStop = 0;
 	G.heartTimer = 0;
 	if (G.ambient) {
@@ -983,16 +987,19 @@ scene("game", (data = {}) => {
 				spawnOil(tx * TILE + 8, ty * TILE + 10, 35);
 			}
 			if (c === "C") {
-				const p = center(tx, ty);
-				add([
-					sprite("chest_full_open_anim_f0"), pos(p.x, p.y), anchor("center"), z(p.y + 6),
-					area({ width: 14, height: 14 }), "chest", { opened: false },
-				]);
+				const key = `${G.room}:${tx}:${ty}`;
+				if (!G.openedChests[key]) {
+					const p = center(tx, ty);
+					add([
+						sprite("chest_full_open_anim_f0"), pos(p.x, p.y), anchor("center"), z(p.y + 6),
+						area({ width: 14, height: 14 }), "chest", { opened: false, key },
+					]);
+				}
 			}
 			if (c === "F") spawnBrazier(tx, ty);
 			if (c === "M") {
 				const midx = room.name === "chapel" ? 0 : room.name === "market" ? 1 : 2;
-				spawnMemory(tx * TILE + 8, ty * TILE + 8, midx);
+				if (!G.collectedMemories[midx]) spawnMemory(tx * TILE + 8, ty * TILE + 8, midx);
 			}
 			if (c === "K" && !G.hasFlare) {
 				const p = center(tx, ty);
@@ -1262,7 +1269,8 @@ scene("game", (data = {}) => {
 		f.destroy();
 	});
 	player.onCollide("memory", (m) => {
-		G.memories = Math.min(3, G.memories + 1);
+		G.collectedMemories[m.idx] = true;
+		G.memories = Object.keys(G.collectedMemories).filter((k) => G.collectedMemories[k]).length;
 		play("pickup", { volume: 0.55 });
 		floatText(m.pos, `HATIRA ${G.memories}/3`, [150, 210, 235]);
 		showCaption([STORY.memories[m.idx] || "Bir hatıra."], 4.5);
@@ -1283,6 +1291,7 @@ scene("game", (data = {}) => {
 			if (c.opened) continue;
 			if (c.pos.dist(player.pos) < 24) {
 				c.opened = true;
+				if (c.key) G.openedChests[c.key] = true;
 				c.use(sprite("chest_open", { anim: "open" }));
 				play("open", { volume: 0.5 });
 				spawnHeart(c.pos.x, c.pos.y - 6);
