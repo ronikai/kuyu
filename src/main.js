@@ -786,7 +786,7 @@ scene("game", (data = {}) => {
 	objectiveText.use(anchor("topright"));
 	const hintText = uiText("", 160, 176, 5, [130, 120, 110]);
 	hintText.use(anchor("bot"));
-	hintText.text = "WASD / OKLAR • J: KILIÇ • SHIFT: ATIL • E: ETKİLEŞİM";
+	hintText.text = "WASD / OKLAR • SAĞ TIK/J: KILIÇ • SHIFT: ATIL • E: ETKİLEŞİM";
 
 	const interactPrompt = add([
 		text("E", { size: 8, font: "pixel" }), pos(0, 0), anchor("center"),
