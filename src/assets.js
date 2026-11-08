@@ -9,6 +9,8 @@ export function loadAssets(k) {
 		skelet: 8,
 		imp: 8,
 		orc: 8,
+		chort: 8,
+		bigzombie: 8,
 		demon: 8,
 	};
 
@@ -17,7 +19,7 @@ export function loadAssets(k) {
 			idle: { from: 0, to: 3, loop: true, speed: name === "ghost" ? 5 : 7 },
 			run: { from: 4, to: 7, loop: true, speed: 11 },
 		};
-		if (frames === 9) anims.hit = { from: 8, to: 8, speed: 0 };
+		if (frames === 9) anims.hit = { from: 8, to: 8, speed: 1 };
 		k.loadSprite(name, `assets/0x72/chars/${name}.png`, { sliceX: frames, anims });
 	}
 
@@ -36,6 +38,7 @@ export function loadAssets(k) {
 		"lever_left", "lever_right",
 		"flask_big_blue", "flask_big_red", "flask_big_green", "flask_big_yellow",
 		"flask_blue", "flask_red", "flask_green", "flask_yellow",
+		"bomb_f0", "bomb_f1", "bomb_f2",
 		"doors_frame_left", "doors_frame_right", "doors_frame_top",
 		"doors_leaf_closed", "doors_leaf_open",
 		"chest_empty_open_anim_f0", "chest_empty_open_anim_f1", "chest_empty_open_anim_f2",
@@ -73,6 +76,9 @@ export function loadAssets(k) {
 	k.loadSprite("vignette", "assets/fx/vignette.png");
 	k.loadSprite("topshadow", "assets/fx/topshadow.png");
 	k.loadSprite("grime", "assets/fx/grime.png");
+	k.loadSprite("flame", "assets/fx/flame.png");
+	k.loadSprite("smoke", "assets/fx/smoke.png");
+	k.loadSprite("spark", "assets/fx/spark.png");
 
 	k.loadFont("pixel", "assets/kenney/font/vt323.ttf");
 	k.loadFont("titlefont", "assets/kenney/font/pressstart.ttf");
@@ -81,4 +87,5 @@ export function loadAssets(k) {
 	for (const s of sfx) k.loadSound(s, `assets/kenney/sfx/${s}.ogg`);
 	k.loadSound("ending_jingle", "assets/kenney/music/ending.ogg");
 	k.loadSound("title_jingle", "assets/kenney/music/title.ogg");
+	k.loadSound("ambient", "assets/ambient/drone.wav");
 }

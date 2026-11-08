@@ -44,7 +44,16 @@ export const STORY = {
 			],
 		},
 		{
-			title: "V. DİP",
+			title: "V. SESSİZ ATEŞ",
+			subtitle: "Kuyu, ışığı senden alır; karşılığında yol verir.",
+			objective: "Üç ocağı korla yak. Kapı açılsın.",
+			enter: [
+				"Üç taş ocak var. Hiçbiri yanmıyor.",
+				"Fenerin yağı azalıyor. Kor, karanlığı bir an için yarar.",
+			],
+		},
+		{
+			title: "VI. DİP",
 			subtitle: "Kuyunun kalbi. Ve kardeşimin sesi.",
 			objective: "Bekçiyi yen. Sonra seç.",
 			enter: [
@@ -52,6 +61,11 @@ export const STORY = {
 				"Karanlığın ortasında bir şey, Zeynep’in yüzüyle başını kaldırıyor.",
 			],
 		},
+	],
+	memories: [
+		"Bir hatıra: Kuyuya ilk inen şövalye, kardeşini geri getirmek için kendi adını verdi.",
+		"Bir hatıra: Tüccar, sattığı her şeyin kuyuda bir yankısı olduğunu fark ettiğinde çok geçti.",
+		"Bir hatıra: Rahip, kuyunun sesini duyduğu gün imanını değil, kızının adını kaybetti.",
 	],
 	dialogues: {
 		priest: [

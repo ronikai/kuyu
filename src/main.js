@@ -41,6 +41,10 @@ const G = {
 	comboTimer: 0,
 	hasFlare: false,
 	flareCd: 0,
+	memories: 0,
+	hitStop: 0,
+	ambient: null,
+	heartTimer: 0,
 	solved: {},
 	talked: {},
 	seen: {},
@@ -59,6 +63,13 @@ function resetRun() {
 	G.comboTimer = 0;
 	G.hasFlare = false;
 	G.flareCd = 0;
+	G.memories = 0;
+	G.hitStop = 0;
+	G.heartTimer = 0;
+	if (G.ambient) {
+		G.ambient.stop();
+		G.ambient = null;
+	}
 	G.solved = {};
 	G.talked = {};
 	G.seen = {};
@@ -136,6 +147,13 @@ scene("title", () => {
 	}
 	add([sprite("hole"), pos(144, 78), scale(2), z(3)]);
 	add([sprite("glow"), pos(160, 96), anchor("center"), scale(2.5), opacity(0.25), z(1)]);
+	const titleFog = [];
+	for (let i = 0; i < 3; i++) {
+		titleFog.push(add([
+			sprite("smoke"), pos(rand(0, W), rand(40, 150)), anchor("center"),
+			scale(rand(0.3, 0.5)), color(rgb(120, 120, 150)), opacity(rand(0.03, 0.06)), z(1),
+		]));
+	}
 
 	const ghost = add([
 		sprite("ghost", { anim: "idle" }),
@@ -171,9 +189,23 @@ scene("title", () => {
 	]);
 	const hint = add([
 		text("ENTER İLE İN", { size: 7, font: "pixel" }),
-		pos(160, 152),
+		pos(160, 148),
 		anchor("top"),
 		color(rgb(255, 205, 130)),
+		z(20),
+	]);
+	add([
+		text("J: KILIÇ  •  SHIFT: ATIL  •  E: ETKİLEŞİM  •  Q: KOR", { size: 4.5, font: "pixel" }),
+		pos(160, 162),
+		anchor("top"),
+		color(rgb(125, 110, 95)),
+		z(20),
+	]);
+	add([
+		text("0x72 • Kenney • OFL", { size: 4, font: "pixel" }),
+		pos(160, 172),
+		anchor("top"),
+		color(rgb(90, 80, 70)),
 		z(20),
 	]);
 
@@ -181,6 +213,10 @@ scene("title", () => {
 		hint.opacity = 0.55 + Math.sin(time() * 4) * 0.35;
 		ghost.pos.y = 70 + Math.sin(time() * 0.9) * 4;
 		ghost.opacity = 0.28 + Math.sin(time() * 1.6) * 0.12;
+		for (const f of titleFog) {
+			f.pos.x += 1.5 * dt();
+			if (f.pos.x > W + 30) f.pos.x = -30;
+		}
 	});
 
 	onKeyPress(["enter", "space"], () => {
@@ -262,22 +298,32 @@ scene("game", (data = {}) => {
 	G.uiLocked = true;
 	G.paused = false;
 	G.choiceActive = false;
+	G.combo = 0;
+	G.comboTimer = 0;
 	setCamScale(2);
 	setCamPos(W / 2, H / 2);
+	if (!G.ambient) G.ambient = play("ambient", { loop: true, volume: 0.16 });
 
 	const room = { ...ROOMS[G.room], ...STORY.rooms[G.room] };
 	const grid = room.map.map((r) => r.split(""));
 
 	add([rect(W, H), pos(0, 0), color(rgb(7, 6, 11)), z(0)]);
+	const fadeIn = add([rect(W * U, H * U), pos(0, 0), color(rgb(0, 0, 0)), opacity(1), z(20000), fixed()]);
+	tween(1, 0, 0.45, (v) => (fadeIn.opacity = v));
+	wait(0.5, () => fadeIn.destroy());
 
 	const walls = [];
 	const blockers = [];
 	const plates = [];
 	const spikes = [];
 	const enemies = [];
+	const braziers = [];
+	const projectiles = [];
+	const collapsers = [];
 	let gate = null;
 	let gateOpen = false;
 	let gateVisual = null;
+	let miniBossSpawned = false;
 	let crate = null;
 	let crateGX = -1;
 	let crateGY = -1;
@@ -289,7 +335,7 @@ scene("game", (data = {}) => {
 	let dialogue = null;
 	let caption = null;
 	let player = null;
-	let enemyGrace = 2.0;
+	let enemyGrace = 3.0;
 	let pauseObjs = [];
 
 	const floorAt = (tx, ty) => {
@@ -298,19 +344,30 @@ scene("game", (data = {}) => {
 		return c !== "#" && c !== "~";
 	};
 
+	const floorTints = {
+		well: [185, 174, 196], chapel: [150, 185, 190], market: [198, 176, 146],
+		bridge: [150, 170, 205], silentfire: [190, 150, 130], bottom: [190, 130, 135],
+	};
+	const wallTints = {
+		well: [178, 166, 190], chapel: [155, 188, 194], market: [196, 172, 145],
+		bridge: [155, 172, 205], silentfire: [195, 155, 132], bottom: [192, 138, 142],
+	};
+
 	function addFloor(tx, ty) {
 		const p = vec2(tx * TILE, ty * TILE);
 		const v = (tx * 7 + ty * 13) % 8 + 1;
-		add([sprite(`floor_${v}`), pos(p.x, p.y), z(1), color(rgb(150, 142, 158))]);
+		const floor = add([sprite(`floor_${v}`), pos(p.x, p.y), z(1), color(rgb(...(floorTints[room.name] || floorTints.well))), opacity(1)]);
 		if ((tx + ty) % 3 === 0) {
 			add([sprite("grime"), pos(p.x, p.y), z(2), opacity(0.45)]);
 		}
+		return floor;
 	}
 
 	function addWall(tx, ty) {
 		const p = vec2(tx * TILE, ty * TILE);
-		add([sprite("wall_mid"), pos(p.x, p.y), z(p.y + 8), color(rgb(155, 145, 165))]);
-		add([sprite("wall_top_mid"), pos(p.x, p.y - TILE), z(p.y + 8), color(rgb(175, 165, 185))]);
+		const wt = wallTints[room.name] || wallTints.well;
+		add([sprite("wall_mid"), pos(p.x, p.y), z(p.y + 8), color(rgb(...wt))]);
+		add([sprite("wall_top_mid"), pos(p.x, p.y - TILE), z(p.y + 8), color(rgb(wt[0] + 20, wt[1] + 20, wt[2] + 20))]);
 		const col = add([
 			rect(TILE, TILE),
 			pos(p.x + 8, p.y + 8),
@@ -347,12 +404,15 @@ scene("game", (data = {}) => {
 			const c = grid[ty][tx];
 			if (c === "#") addWall(tx, ty);
 			else if (c === "~") addPit(tx, ty);
-			else addFloor(tx, ty);
+			else if (c === "x") {
+				const floor = addFloor(tx, ty);
+				collapsers.push({ tx, ty, floor, triggered: false, hole: null });
+			} else addFloor(tx, ty);
 		}
 	}
 
 	// Force the puzzle gates to be the only way through.
-	if (room.name === "chapel") {
+	if (room.name === "chapel" || room.name === "silentfire") {
 		addWall(8, 9);
 		addWall(10, 9);
 	}
@@ -562,6 +622,7 @@ scene("game", (data = {}) => {
 			sprite("hero", { anim: "idle" }),
 			pos(p.x, p.y),
 			anchor("center"),
+			outline(1, rgb(12, 12, 18), 0.9),
 			area({ scale: vec2(0.62, 0.42), offset: vec2(0, 7) }),
 			body(),
 			z(p.y + 14),
@@ -569,9 +630,12 @@ scene("game", (data = {}) => {
 			{
 				facing: vec2(0, 1),
 				attackCd: 0,
+				atkStep: 0,
+				atkTimer: 0,
 				dashCd: 0,
 				dashTime: 0,
 				iframes: 1.4,
+				hitAnim: 0,
 				walkT: 0,
 			},
 		]);
@@ -596,12 +660,19 @@ scene("game", (data = {}) => {
 	add([rect(52 * U, 7 * U), pos(8 * U, 24 * U), color(rgb(20, 16, 22)), z(10000), fixed(), outline(2, rgb(90, 75, 60), 0.8)]);
 	const oilBar = add([rect(50 * U, 5 * U), pos(9 * U, 25 * U), color(rgb(230, 160, 70)), z(10001), fixed()]);
 	const oilLabel = uiText("YAĞ", 64, 24, 5, [150, 130, 110]);
-	const comboText = uiText("", 8, 36, 7, [255, 210, 120]);
+	const memoryText = uiText("HATIRA 0/3", 8, 34, 5, [130, 170, 190]);
+	const comboText = uiText("", 8, 44, 7, [255, 210, 120]);
 	const objectiveText = uiText("", 312, 8, 6, [190, 175, 155], 140, "right");
 	objectiveText.use(anchor("topright"));
 	const hintText = uiText("", 160, 176, 5, [130, 120, 110]);
 	hintText.use(anchor("bot"));
 	hintText.text = "WASD / OKLAR • J: KILIÇ • SHIFT: ATIL • E: ETKİLEŞİM";
+
+	const interactPrompt = add([
+		text("E", { size: 8, font: "pixel" }), pos(0, 0), anchor("center"),
+		color(rgb(255, 220, 140)), opacity(0.9), z(6000),
+	]);
+	interactPrompt.hidden = true;
 
 	function setObjective(t) {
 		objectiveText.text = t;
@@ -612,6 +683,7 @@ scene("game", (data = {}) => {
 		oilLabel.text = G.hasFlare ? (G.flareCd > 0 ? "KOR…" : "YAĞ • Q:KOR") : "YAĞ";
 		const ratio = G.oil / G.maxOil;
 		oilBar.width = Math.max(0, 50 * U * ratio);
+		memoryText.text = `HATIRA ${G.memories}/3`;
 		if (G.combo >= 2) {
 			comboText.text = `KOMBO x${G.combo}`;
 			comboText.opacity = 1;
@@ -733,6 +805,8 @@ scene("game", (data = {}) => {
 		skelet: { hp: 3, speed: 27, aggro: 120, scale: vec2(0.8, 0.8), offsetY: 2 },
 		imp: { hp: 1, speed: 46, aggro: 145, scale: vec2(0.8, 0.8), offsetY: 2 },
 		orc: { hp: 5, speed: 28, aggro: 130, scale: vec2(0.7, 0.7), offsetY: 4 },
+		chort: { hp: 4, speed: 22, aggro: 175, scale: vec2(0.7, 0.55), offsetY: 6 },
+		bigzombie: { hp: 10, speed: 18, aggro: 150, scale: vec2(0.62, 0.5), offsetY: 10 },
 		demon: { hp: 18, speed: 24, aggro: 190, scale: vec2(0.62, 0.5), offsetY: 10 },
 	};
 
@@ -759,6 +833,7 @@ scene("game", (data = {}) => {
 				chargeCd: rand(1.4, 2.6),
 				chargeTime: 0,
 				chargeDir: vec2(0, 0),
+				shootCd: rand(0.8, 1.8),
 				boss: type === "demon",
 				phase: 1,
 			},
@@ -774,6 +849,7 @@ scene("game", (data = {}) => {
 		e.hp -= dmg;
 		e.flash = 0.12;
 		e.color = rgb(255, 120, 110);
+		G.hitStop = e.boss ? 0.03 : 0.045;
 		play("hit", { volume: 0.45 });
 		shake(2);
 		burst(e.pos, [220, 70, 60], 6);
@@ -786,6 +862,12 @@ scene("game", (data = {}) => {
 			if (e.boss) {
 				onBossDeath(e);
 			} else {
+				if (e.enemyType === "bigzombie" && room.name === "silentfire") {
+					G.solved[G.room] = true;
+					openGate();
+					setObjective("Köle düştü. Kapı açıldı.");
+					floatText(e.pos, "KAPI AÇILDI", [180, 220, 140]);
+				}
 				burst(e.pos, [200, 60, 50], 12);
 				if (rand(0, 1) < 0.3) spawnOil(e.pos.x, e.pos.y, 18);
 				if (rand(0, 1) < 0.12) spawnHeart(e.pos.x, e.pos.y);
@@ -808,8 +890,16 @@ scene("game", (data = {}) => {
 		if (bossBarBg) bossBarBg.hidden = true;
 		setObjective("Bekçi düştü. Seçim senin.");
 		G.uiLocked = true;
+		const sis = add([
+			sprite("sister", { anim: "idle" }), pos(160, 54), anchor("center"),
+			scale(1.25), color(rgb(150, 225, 255)), opacity(0.55), z(7000),
+		]);
+		sis.play("idle");
+		add([sprite("glow"), pos(160, 58), anchor("center"), scale(2.2), opacity(0.25), z(6999)]);
 		wait(1.2, () => {
-			startDialogue(STORY.dialogues.boss, () => showChoice());
+			const lines = [...STORY.dialogues.boss];
+			if (G.memories >= 3) lines.push("Bekçi: “Üç hatıra taşıyorsun. O zaman onun gerçek adını biliyorsun.”");
+			startDialogue(lines, () => showChoice());
 		});
 	}
 
@@ -838,12 +928,56 @@ scene("game", (data = {}) => {
 		]);
 	}
 
+	function spawnMemory(x, y, idx) {
+		add([sprite("glow"), pos(x, y), anchor("center"), scale(0.9), opacity(0.28), z(490)]);
+		return add([
+			sprite("coin", { anim: "spin" }), pos(x, y), anchor("center"), scale(2),
+			z(500), area({ width: 12, height: 12 }), body({ isStatic: true }),
+			"memory", { idx },
+		]);
+	}
+
+	function spawnBrazier(tx, ty) {
+		const p = center(tx, ty);
+		add([sprite("column"), pos(p.x, p.y + 8), anchor("bot"), z(p.y + 8)]);
+		const glow = add([sprite("glow"), pos(p.x, p.y - 9), anchor("center"), scale(0.85), opacity(0.08), z(8400)]);
+		const flame = add([sprite("flame"), pos(p.x, p.y - 9), anchor("center"), scale(0.085), opacity(0), color(rgb(255, 150, 70)), z(8500)]);
+		const b = { x: p.x, y: p.y, baseY: p.y - 9, flame, glow, lit: false, tx, ty };
+		braziers.push(b);
+		return b;
+	}
+
+	function lightBrazier(b) {
+		if (b.lit) return;
+		b.lit = true;
+		b.flame.opacity = 1;
+		b.glow.opacity = 0.5;
+		play("break", { volume: 0.28 });
+		burst(vec2(b.x, b.baseY), [255, 190, 90], 14);
+		floatText(vec2(b.x, b.baseY - 8), "YANDI", [255, 200, 100]);
+	}
+
+	function checkBraziers() {
+		if (room.name !== "silentfire" || G.solved[G.room] || miniBossSpawned) return;
+		if (braziers.length > 0 && braziers.every((b) => b.lit)) {
+			miniBossSpawned = true;
+			setObjective("Bekçinin kölesi uyandı. Onu yen.");
+			floatText(player.pos, "ÜÇ ATEŞ — BİR ŞEY UYANDI", [255, 120, 80]);
+			play("roar", { volume: 0.5 });
+			shake(8);
+			wait(0.6, () => {
+				spawnEnemy("bigzombie", 9, 5);
+				burst(center(9, 5), [120, 200, 90], 20);
+			});
+		}
+	}
+
 	// map entities
 	for (let ty = 0; ty < 11; ty++) {
 		for (let tx = 0; tx < 20; tx++) {
 			const c = grid[ty][tx];
-			if (c === "g" || c === "s" || c === "i" || c === "o" || c === "B") {
-				spawnEnemy({ g: "goblin", s: "skelet", i: "imp", o: "orc", B: "demon" }[c], tx, ty);
+			if (c === "g" || c === "s" || c === "i" || c === "o" || c === "c" || c === "z" || c === "B") {
+				spawnEnemy({ g: "goblin", s: "skelet", i: "imp", o: "orc", c: "chort", z: "bigzombie", B: "demon" }[c], tx, ty);
 			}
 			if (c === "O") {
 				spawnOil(tx * TILE + 8, ty * TILE + 10, 35);
@@ -855,6 +989,18 @@ scene("game", (data = {}) => {
 					area({ width: 14, height: 14 }), "chest", { opened: false },
 				]);
 			}
+			if (c === "F") spawnBrazier(tx, ty);
+			if (c === "M") {
+				const midx = room.name === "chapel" ? 0 : room.name === "market" ? 1 : 2;
+				spawnMemory(tx * TILE + 8, ty * TILE + 8, midx);
+			}
+			if (c === "K" && !G.hasFlare) {
+				const p = center(tx, ty);
+				add([
+					sprite("flask_big_yellow"), pos(p.x, p.y), anchor("center"), z(p.y + 6),
+					area({ width: 12, height: 14 }), body({ isStatic: true }), "flarepickup",
+				]);
+			}
 		}
 	}
 
@@ -863,6 +1009,10 @@ scene("game", (data = {}) => {
 		makePlate(6, 6, "red");
 		makePlate(10, 6, "blue");
 		makePlate(14, 6, "red");
+		if (!G.solved[G.room]) makeGate(9, 8, "h");
+		else openGate(true);
+	}
+	if (room.name === "silentfire") {
 		if (!G.solved[G.room]) makeGate(9, 8, "h");
 		else openGate(true);
 	}
@@ -888,6 +1038,7 @@ scene("game", (data = {}) => {
 	if (room.name === "bottom") {
 		bossBarBg = add([rect(122 * U, 8 * U), pos(99 * U, 14 * U), color(rgb(24, 18, 20)), z(10000), fixed(), outline(2, rgb(100, 60, 50), 0.9)]);
 		bossBar = add([rect(120 * U, 6 * U), pos(100 * U, 15 * U), color(rgb(200, 50, 45)), z(10001), fixed()]);
+		uiText("BEKÇİ", 100, 5, 5, [220, 130, 120]);
 	}
 
 	// NPC
@@ -918,8 +1069,33 @@ scene("game", (data = {}) => {
 	/* ---------------- lighting / depth ---------------- */
 	add([sprite("topshadow"), pos(0, 0), scale(U), z(8000), opacity(0.9), fixed()]);
 	const vignette = add([sprite("vignette"), pos(0, 0), scale(U), z(9000), opacity(0.75), fixed()]);
-	add([rect(W, H), pos(0, 0), color(rgb(0, 0, 0)), opacity(0.08), z(8999)]);
-	add([rect(W, H), pos(0, 0), color(rgb(20, 12, 20)), opacity(0.04), z(10)]);
+	add([rect(W, H), pos(0, 0), color(rgb(0, 0, 0)), opacity(0.04), z(8999)]);
+	const roomTints = {
+		well: [55, 35, 28], chapel: [25, 55, 62], market: [65, 45, 25],
+		bridge: [25, 35, 65], silentfire: [65, 32, 22], bottom: [70, 20, 30],
+	};
+	add([rect(W, H), pos(0, 0), color(rgb(...(roomTints[room.name] || roomTints.well))), opacity(0.055), z(10)]);
+
+	const fog = [];
+	for (let i = 0; i < 4; i++) {
+		const f = add([
+			sprite("smoke"), pos(rand(0, W), rand(24, 150)), anchor("center"),
+			scale(rand(0.35, 0.6)), color(rgb(120, 120, 150)), opacity(rand(0.035, 0.075)), z(6),
+		]);
+		fog.push(f);
+	}
+
+	function spawnDust() {
+		const d = add([
+			rect(1, 1), pos(rand(8, W - 8), rand(8, H - 8)),
+			color(rgb(200, 180, 140)), opacity(0), z(7),
+		]);
+		tween(0, 0.35, 1.2, (v) => (d.opacity = v));
+		tween(d.pos.y, d.pos.y - rand(6, 14), 3.5, (v) => (d.pos.y = v));
+		wait(3.6, () => d.destroy());
+		wait(rand(0.25, 0.8), spawnDust);
+	}
+	spawnDust();
 
 	/* ---------------- init ---------------- */
 	player = spawnPlayer();
@@ -953,11 +1129,11 @@ scene("game", (data = {}) => {
 
 	function scheduleGhost() {
 		wait(rand(7, 14), () => {
-			if (!G.paused && !G.uiLocked && G.room !== 4) spawnGhost();
+			if (!G.paused && !G.uiLocked && room.name !== "bottom") spawnGhost();
 			scheduleGhost();
 		});
 	}
-	if (G.room !== 4) scheduleGhost();
+	if (room.name !== "bottom") scheduleGhost();
 
 	if (import.meta.env.DEV) {
 		window.__scene = {
@@ -965,33 +1141,44 @@ scene("game", (data = {}) => {
 			spawnGhost,
 			get player() { return player; },
 			get attack() { return attack; },
+			get braziers() { return braziers; },
 		};
 	}
 
 	/* ---------------- combat ---------------- */
 	function attack() {
 		if (G.uiLocked || G.paused || player.attackCd > 0) return;
-		player.attackCd = 0.28;
-		play("swing", { volume: 0.35 });
+		player.atkStep = player.atkTimer > 0 ? player.atkStep + 1 : 1;
+		if (player.atkStep > 3) player.atkStep = 1;
+		player.atkTimer = 0.8;
+		player.attackCd = player.atkStep === 3 ? 0.36 : 0.23;
+		play("swing", { volume: player.atkStep === 3 ? 0.5 : 0.35 });
 		const dir = player.facing;
 		const angle = (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
+		const finisher = player.atkStep === 3;
 		const slash = add([
-			sprite("weapon_knight_sword"), pos(player.pos.x + dir.x * 15, player.pos.y + dir.y * 15),
-			anchor("center"), rotate(angle + 40), z(player.z + 2), opacity(0.95), lifespan(0.14),
+			sprite("weapon_knight_sword"),
+			pos(player.pos.x + dir.x * (finisher ? 18 : 15), player.pos.y + dir.y * (finisher ? 18 : 15)),
+			anchor("center"), rotate(angle + (finisher ? 65 : 40)), scale(finisher ? 1.35 : 1),
+			color(finisher ? rgb(255, 220, 140) : rgb(255, 255, 255)),
+			z(player.z + 2), opacity(0.95), lifespan(0.16),
 		]);
-		tween(slash.pos, slash.pos.add(dir.scale(6)), 0.14, (v) => (slash.pos = v));
-		tween(1, 0, 0.14, (v) => (slash.opacity = v));
+		tween(slash.pos, slash.pos.add(dir.scale(finisher ? 10 : 6)), 0.16, (v) => (slash.pos = v));
+		tween(1, 0, 0.16, (v) => (slash.opacity = v));
 
 		const comboBonus = G.combo >= 2 ? 2 : 1;
+		const reach = finisher ? 46 : 37;
+		const dmg = finisher ? 2 : comboBonus;
 		for (const e of enemies) {
 			if (!e || e.dead) continue;
 			const to = e.pos.sub(player.pos);
 			const dist = to.len();
-			if (dist < 38 && dist > 0) {
+			if (dist < reach && dist > 0) {
 				const dot = to.unit().dot(dir);
-				if (dot > 0.05) damageEnemy(e, comboBonus);
+				if (dot > (finisher ? -0.15 : 0.05)) damageEnemy(e, dmg);
 			}
 		}
+		if (finisher) shake(4);
 	}
 
 	function flareBurst() {
@@ -1011,6 +1198,20 @@ scene("game", (data = {}) => {
 				damageEnemy(e, 1);
 			}
 		}
+		for (const b of braziers) {
+			if (!b.lit && b.x !== undefined && vec2(b.x, b.baseY).dist(p) < 64) lightBrazier(b);
+		}
+		checkBraziers();
+	}
+
+	function spawnProjectile(x, y, dir) {
+		const p = add([
+			sprite("bomb_f0"), pos(x, y), anchor("center"), z(y + 12),
+			area({ width: 10, height: 10 }), "projectile",
+			{ vx: dir.x * 62, vy: dir.y * 62, life: 3.2 },
+		]);
+		projectiles.push(p);
+		return p;
 	}
 
 	function hurtPlayer(amount = 1, sourcePos = null) {
@@ -1019,6 +1220,7 @@ scene("game", (data = {}) => {
 		G.combo = 0;
 		G.comboTimer = 0;
 		player.iframes = 1.2;
+		player.hitAnim = 0.18;
 		play("hurt", { volume: 0.55 });
 		shake(7);
 		flash(rgb(130, 20, 20), 0.28);
@@ -1036,7 +1238,9 @@ scene("game", (data = {}) => {
 		G.uiLocked = true;
 		play("open", { volume: 0.5 });
 		flash(rgb(255, 230, 190), 0.25);
-		wait(0.55, () => go("game", { room: G.room + 1 }));
+		const fadeOut = add([rect(W * U, H * U), pos(0, 0), color(rgb(0, 0, 0)), opacity(0), z(20001), fixed()]);
+		tween(0, 1, 0.32, (v) => (fadeOut.opacity = v));
+		wait(0.4, () => go("game", { room: G.room + 1 }));
 	}
 
 	player.onCollide("oil", (o) => {
@@ -1050,6 +1254,20 @@ scene("game", (data = {}) => {
 		play("pickup", { volume: 0.5 });
 		floatText(h.pos, "CAN +", [255, 120, 140]);
 		h.destroy();
+	});
+	player.onCollide("flarepickup", (f) => {
+		G.hasFlare = true;
+		play("pickup", { volume: 0.5 });
+		floatText(f.pos, "KOR KAZANDIN — Q", [255, 210, 120]);
+		f.destroy();
+	});
+	player.onCollide("memory", (m) => {
+		G.memories = Math.min(3, G.memories + 1);
+		play("pickup", { volume: 0.55 });
+		floatText(m.pos, `HATIRA ${G.memories}/3`, [150, 210, 235]);
+		showCaption([STORY.memories[m.idx] || "Bir hatıra."], 4.5);
+		burst(m.pos, [120, 200, 255], 12);
+		m.destroy();
 	});
 
 	/* ---------------- interaction ---------------- */
@@ -1121,7 +1339,12 @@ scene("game", (data = {}) => {
 	onUpdate(() => {
 		if (G.paused) return;
 		const d = dt();
+		if (G.hitStop > 0) {
+			G.hitStop = Math.max(0, G.hitStop - d);
+			return;
+		}
 		player.attackCd = Math.max(0, player.attackCd - d);
+		player.atkTimer = Math.max(0, player.atkTimer - d);
 		player.dashCd = Math.max(0, player.dashCd - d);
 		player.iframes = Math.max(0, player.iframes - d);
 		player.dashTime = Math.max(0, player.dashTime - d);
@@ -1134,13 +1357,28 @@ scene("game", (data = {}) => {
 			enemyGrace = Math.max(0, enemyGrace - d);
 		}
 
+		if (!G.hasFlare) {
+			for (const f of get("flarepickup")) {
+				if (f.pos.dist(player.pos) < 20) {
+					G.hasFlare = true;
+					play("pickup", { volume: 0.5 });
+					floatText(f.pos, "KOR KAZANDIN — Q", [255, 210, 120]);
+					f.destroy();
+					break;
+				}
+			}
+		}
+
 		if (!G.uiLocked) {
 			let dir = vec2(0, 0);
 			if (isKeyDown("left") || isKeyDown("a")) dir.x -= 1;
 			if (isKeyDown("right") || isKeyDown("d")) dir.x += 1;
 			if (isKeyDown("up") || isKeyDown("w")) dir.y -= 1;
 			if (isKeyDown("down") || isKeyDown("s")) dir.y += 1;
-			if (dir.len() > 0) {
+			if (player.hitAnim > 0) {
+				player.hitAnim = Math.max(0, player.hitAnim - d);
+				player.play("hit");
+			} else if (dir.len() > 0) {
 				dir = dir.unit();
 				player.facing = dir;
 				player.flipX = dir.x < 0;
@@ -1175,18 +1413,58 @@ scene("game", (data = {}) => {
 		player.glow.pos = vec2(player.pos.x, player.pos.y + 2);
 		player.glow.z = 4;
 		const oilRatio = G.oil / G.maxOil;
-		player.glow.opacity = (0.08 + oilRatio * 0.18) * (0.85 + Math.sin(time() * 7) * 0.15);
-		player.glow.scale = vec2(1.7 + oilRatio * 1.1);
+		player.glow.opacity = (0.14 + oilRatio * 0.22) * (0.85 + Math.sin(time() * 7) * 0.15);
+		player.glow.scale = vec2(2.0 + oilRatio * 1.3);
 		if (player.iframes > 0) player.opacity = 0.45 + Math.sin(time() * 30) * 0.3;
 		else player.opacity = 1;
 
 		vignette.opacity = 0.55 + (1 - oilRatio) * 0.32;
+
+		let promptTarget = null;
+		let promptLabel = "E";
+		if (npc && npc.pos.dist(player.pos) < 30) promptTarget = npc;
+		else if (crate && crate.pos.dist(player.pos) < 26) promptTarget = crate;
+		else {
+			for (const c of get("chest")) {
+				if (!c.opened && c.pos.dist(player.pos) < 24) {
+					promptTarget = c;
+					break;
+				}
+			}
+			if (!promptTarget && G.hasFlare) {
+				for (const b of braziers) {
+					if (!b.lit && vec2(b.x, b.baseY).dist(player.pos) < 64) {
+						promptTarget = { pos: vec2(b.x, b.baseY) };
+						promptLabel = "Q";
+						break;
+					}
+				}
+			}
+		}
+		if (promptTarget) {
+			interactPrompt.hidden = false;
+			interactPrompt.text = promptLabel;
+			interactPrompt.pos = vec2(promptTarget.pos.x, promptTarget.pos.y - 24);
+			interactPrompt.z = 6000;
+		} else {
+			interactPrompt.hidden = true;
+		}
+
+		if (G.hearts <= 1) {
+			G.heartTimer -= d;
+			if (G.heartTimer <= 0) {
+				G.heartTimer = 0.9;
+				play("hurt", { volume: 0.1, speed: 0.55 });
+			}
+		} else {
+			G.heartTimer = 0;
+		}
 		if (!G.uiLocked) tryExit();
 
 		for (const e of enemies) {
 			if (!e || e.dead) continue;
 			e.flash = Math.max(0, e.flash - d);
-			if (e.flash === 0) e.color = rgb(255, 255, 255);
+			if (e.flash === 0) e.color = e.boss && e.phase === 2 ? rgb(255, 155, 120) : rgb(255, 255, 255);
 			e.z = e.pos.y + (e.boss ? 18 : 12);
 		}
 
@@ -1198,6 +1476,48 @@ scene("game", (data = {}) => {
 				else pressPlate(p);
 			} else if (dist > 20) {
 				p.inside = false;
+			}
+		}
+
+		for (const f of fog) {
+			f.pos.x += 2.2 * d;
+			if (f.pos.x > W + 40) f.pos.x = -40;
+			f.pos.y += Math.sin(time() * 0.4 + f.pos.x * 0.02) * 0.03;
+		}
+
+		for (const b of braziers) {
+			if (!b.lit) continue;
+			const f = Math.sin(time() * 12 + b.tx * 2.1);
+			b.flame.opacity = 0.72 + f * 0.24;
+			b.flame.scale = vec2(0.08 + f * 0.008, 0.09 - f * 0.005);
+			b.flame.pos.y = b.baseY + Math.sin(time() * 3 + b.ty) * 1.2;
+			b.glow.opacity = 0.36 + f * 0.08;
+		}
+
+		for (const c of collapsers) {
+			if (c.triggered || G.uiLocked) continue;
+			const cp = center(c.tx, c.ty);
+			if (player.pos.dist(cp) < 10) {
+				c.triggered = true;
+				tween(1, 0.15, 0.28, (v) => (c.floor.opacity = v));
+				wait(0.3, () => {
+					c.floor.hidden = true;
+					c.hole = add([sprite("hole"), pos(cp.x - 8, cp.y - 8), z(2)]);
+					burst(cp, [120, 100, 90], 8);
+					play("break", { volume: 0.2 });
+					if (player.pos.dist(cp) < 10) {
+						hurtPlayer(1, cp);
+						player.pos = center(3, 5);
+						floatText(player.pos, "KÖPRÜ ÇÖKTÜ", [255, 140, 120]);
+					}
+					wait(2.2, () => {
+						if (c.hole) c.hole.destroy();
+						c.hole = null;
+						c.floor.hidden = false;
+						c.floor.opacity = 1;
+						c.triggered = false;
+					});
+				});
 			}
 		}
 
@@ -1235,6 +1555,10 @@ scene("game", (data = {}) => {
 							for (const [ox, oy] of [[-3, 2], [3, 2]]) {
 								spawnEnemy("imp", Math.max(1, Math.round(e.pos.x / 16) + ox), Math.max(1, Math.round(e.pos.y / 16) + oy));
 							}
+							for (let a = 0; a < 8; a++) {
+								const ang = (a / 8) * Math.PI * 2;
+								spawnProjectile(e.pos.x, e.pos.y, vec2(Math.cos(ang), Math.sin(ang)));
+							}
 						}
 						if (e.chargeCd <= 0 && dist < 110) {
 							e.chargeCd = 2.8;
@@ -1263,6 +1587,16 @@ scene("game", (data = {}) => {
 							e.move(e.chargeDir.scale(105));
 						} else {
 							e.move(to.unit().scale(e.speed));
+						}
+					} else if (e.enemyType === "chort") {
+						e.shootCd -= d;
+						if (dist < 100) e.move(to.unit().scale(-e.speed));
+						else if (dist > 135) e.move(to.unit().scale(e.speed));
+						if (e.shootCd <= 0 && dist < 185) {
+							e.shootCd = 2.4;
+							const aim = player.pos.sub(e.pos);
+							if (aim.len() > 0) spawnProjectile(e.pos.x, e.pos.y + 4, aim.unit());
+							play("swing", { volume: 0.2 });
 						}
 					} else if (e.enemyType === "imp") {
 						const side = vec2(-to.y, to.x).unit().scale(Math.sin(time() * 5 + e.seed) * 22);
@@ -1298,6 +1632,32 @@ scene("game", (data = {}) => {
 					hurtPlayer(1, e.pos);
 					break;
 				}
+			}
+		}
+
+		for (let i = projectiles.length - 1; i >= 0; i--) {
+			const pr = projectiles[i];
+			if (!pr) {
+				projectiles.splice(i, 1);
+				continue;
+			}
+			pr.pos.x += pr.vx * d;
+			pr.pos.y += pr.vy * d;
+			pr.life -= d;
+			pr.z = pr.pos.y + 12;
+			pr.flipX = pr.vx < 0;
+			const inside = floorAt(Math.floor(pr.pos.x / TILE), Math.floor(pr.pos.y / TILE));
+			if (pr.life <= 0 || !inside) {
+				burst(pr.pos, [180, 120, 60], 4);
+				pr.destroy();
+				projectiles.splice(i, 1);
+				continue;
+			}
+			if (!G.uiLocked && pr.pos.dist(player.pos) < 11) {
+				hurtPlayer(1, pr.pos);
+				burst(pr.pos, [230, 100, 60], 8);
+				pr.destroy();
+				projectiles.splice(i, 1);
 			}
 		}
 
@@ -1340,7 +1700,19 @@ scene("gameover", (data = {}) => {
 scene("ending", (data = {}) => {
 	setCamScale(2);
 	setCamPos(W / 2, H / 2);
+	if (G.ambient) {
+		G.ambient.stop();
+		G.ambient = null;
+	}
 	const ending = STORY.endings[data.type] || STORY.endings.break;
+	const lines = [...ending.lines];
+	if (G.memories >= 3) {
+		lines.push(
+			data.type === "copy"
+				? "Üç hatırayı taşıdın. Kopya ilk kez gerçek adını söyledi: Zeynep. Ama sesi hâlâ yanlıştı."
+				: "Üç hatırayı taşıdın. Kuyunun dibinde gerçek Zeynep’in son sözü kaldı: “Beni bırak.”",
+		);
+	}
 	add([rect(W, H), pos(0, 0), color(rgb(5, 5, 9)), z(0)]);
 	add([sprite("vignette"), pos(0, 0), z(10), opacity(0.9)]);
 	play("ending_jingle", { volume: 0.4 });
@@ -1358,13 +1730,13 @@ scene("ending", (data = {}) => {
 
 	function advance() {
 		if (!done) {
-			chars = ending.lines[index].length;
-			lineObj.text = ending.lines[index];
+			chars = lines[index].length;
+			lineObj.text = lines[index];
 			done = true;
 			return;
 		}
 		index++;
-		if (index >= ending.lines.length) {
+		if (index >= lines.length) {
 			resetRun();
 			go("title");
 			return;
@@ -1376,7 +1748,7 @@ scene("ending", (data = {}) => {
 	onUpdate(() => {
 		if (done) return;
 		chars += dt() * 40;
-		const full = ending.lines[index];
+		const full = lines[index];
 		const n = Math.min(full.length, Math.floor(chars));
 		lineObj.text = full.slice(0, n);
 		if (n >= full.length) done = true;

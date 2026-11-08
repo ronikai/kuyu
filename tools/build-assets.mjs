@@ -82,6 +82,14 @@ const anims = {
     idle: ["orc_warrior_idle_anim_f0.png", "orc_warrior_idle_anim_f1.png", "orc_warrior_idle_anim_f2.png", "orc_warrior_idle_anim_f3.png"],
     run: ["orc_warrior_run_anim_f0.png", "orc_warrior_run_anim_f1.png", "orc_warrior_run_anim_f2.png", "orc_warrior_run_anim_f3.png"],
   },
+  chort: {
+    idle: ["chort_idle_anim_f0.png", "chort_idle_anim_f1.png", "chort_idle_anim_f2.png", "chort_idle_anim_f3.png"],
+    run: ["chort_run_anim_f0.png", "chort_run_anim_f1.png", "chort_run_anim_f2.png", "chort_run_anim_f3.png"],
+  },
+  bigzombie: {
+    idle: ["big_zombie_idle_anim_f0.png", "big_zombie_idle_anim_f1.png", "big_zombie_idle_anim_f2.png", "big_zombie_idle_anim_f3.png"],
+    run: ["big_zombie_run_anim_f0.png", "big_zombie_run_anim_f1.png", "big_zombie_run_anim_f2.png", "big_zombie_run_anim_f3.png"],
+  },
   demon: {
     idle: ["big_demon_idle_anim_f0.png", "big_demon_idle_anim_f1.png", "big_demon_idle_anim_f2.png", "big_demon_idle_anim_f3.png"],
     run: ["big_demon_run_anim_f0.png", "big_demon_run_anim_f1.png", "big_demon_run_anim_f2.png", "big_demon_run_anim_f3.png"],
@@ -115,6 +123,7 @@ const single = {
     "lever_left", "lever_right",
     "flask_big_blue", "flask_big_red", "flask_big_green", "flask_big_yellow",
     "flask_blue", "flask_red", "flask_green", "flask_yellow",
+    "bomb_f0", "bomb_f1", "bomb_f2",
     "doors_frame_left", "doors_frame_right", "doors_frame_top", "doors_leaf_closed", "doors_leaf_open",
     "chest_empty_open_anim_f0", "chest_empty_open_anim_f1", "chest_empty_open_anim_f2",
     "chest_full_open_anim_f0", "chest_full_open_anim_f1", "chest_full_open_anim_f2",
@@ -175,9 +184,6 @@ for (const [name, src] of Object.entries(sfxMap)) {
   }
   fs.copyFileSync(src, path.join(OUT_KENNEY, "sfx", `${name}.ogg`));
 }
-
-const font = path.join(KENNEY, "kenney-fonts/Fonts/Kenney Pixel.ttf");
-if (fs.existsSync(font)) fs.copyFileSync(font, path.join(OUT_KENNEY, "font", "pixel.ttf"));
 
 const jingle = path.join(KENNEY, "music-jingles/Audio/8-Bit jingles/jingles_NES08.ogg");
 if (fs.existsSync(jingle)) fs.copyFileSync(jingle, path.join(OUT_KENNEY, "music", "ending.ogg"));
@@ -241,6 +247,17 @@ const grime = makePng(16, 16, (x, y) => {
   return [0, 0, 0, v > 0.55 ? Math.round((v - 0.55) * 90) : 0];
 });
 fs.writeFileSync(path.join(OUT, "fx", "grime.png"), PNG.sync.write(grime));
+
+// ready-made Kenney particles for braziers / ambience
+const particleDir = path.join(KENNEY, "particle-pack/PNG (Transparent)");
+for (const [src, dst] of [
+  ["flame_05.png", "flame.png"],
+  ["smoke_01.png", "smoke.png"],
+  ["spark_01.png", "spark.png"],
+]) {
+  const s = path.join(particleDir, src);
+  if (fs.existsSync(s)) fs.copyFileSync(s, path.join(OUT, "fx", dst));
+}
 
 fs.writeFileSync(path.join(OUT_0X72, "manifest.json"), JSON.stringify(manifest, null, 2));
 console.log("done");
