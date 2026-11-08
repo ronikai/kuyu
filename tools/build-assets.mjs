@@ -43,9 +43,9 @@ function packStrip(files, outName) {
 
 const anims = {
   hero: {
-    idle: ["knight_m_idle_anim_f0.png", "knight_m_idle_anim_f1.png", "knight_m_idle_anim_f2.png", "knight_m_idle_anim_f3.png"],
-    run: ["knight_m_run_anim_f0.png", "knight_m_run_anim_f1.png", "knight_m_run_anim_f2.png", "knight_m_run_anim_f3.png"],
-    hit: ["knight_m_hit_anim_f0.png"],
+    idle: ["elf_m_idle_anim_f0.png", "elf_m_idle_anim_f1.png", "elf_m_idle_anim_f2.png", "elf_m_idle_anim_f3.png"],
+    run: ["elf_m_run_anim_f0.png", "elf_m_run_anim_f1.png", "elf_m_run_anim_f2.png", "elf_m_run_anim_f3.png"],
+    hit: ["elf_m_hit_anim_f0.png"],
   },
   sister: {
     idle: ["elf_f_idle_anim_f0.png", "elf_f_idle_anim_f1.png", "elf_f_idle_anim_f2.png", "elf_f_idle_anim_f3.png"],

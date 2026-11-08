@@ -6,6 +6,7 @@
 		"dev": "vite",
 		"preview": "vite preview",
 		"assets": "node tools/build-assets.mjs",
+		"assets:world": "node tools/build-world-assets.mjs",
 		"ambient": "node tools/make-ambient.mjs",
 		"zip": "npm run build && mkdir -p dist && zip -r dist/game.zip dist -x \"**/.DS_Store\""
 	},

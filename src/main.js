@@ -15,7 +15,7 @@ const k = kaplay({
 
 const {
 	add, pos, sprite, text, rect, circle, color, opacity, anchor, area, body, z, fixed,
-	scene, go, onUpdate, onKeyPress, isKeyDown, play, wait, tween, shake, flash,
+	scene, go, onUpdate, onKeyPress, onMousePress, onSceneLeave, isKeyDown, play, wait, tween, shake, flash,
 	setGravity, setCamScale, setCamPos, get, rand, vec2, rgb, time,
 	outline, rotate, scale, lifespan,
 } = k;
@@ -23,6 +23,8 @@ const {
 const dt = () => k.dt();
 const W = 320;
 const H = 180;
+
+document.addEventListener("contextmenu", (e) => e.preventDefault());
 
 loadAssets(k);
 setGravity(0);
@@ -201,7 +203,7 @@ scene("title", () => {
 		z(20),
 	]);
 	add([
-		text("J: KILIÇ  •  SHIFT: ATIL  •  E: ETKİLEŞİM  •  Q: KOR", { size: 4.5, font: "pixel" }),
+		text("SAĞ TIK / J: KILIÇ  •  SHIFT: ATIL  •  E: ETKİLEŞİM  •  Q: KOR", { size: 4.5, font: "pixel" }),
 		pos(160, 162),
 		anchor("top"),
 		color(rgb(125, 110, 95)),
@@ -309,6 +311,10 @@ scene("game", (data = {}) => {
 	setCamScale(2);
 	setCamPos(W / 2, H / 2);
 	if (!G.ambient) G.ambient = play("ambient", { loop: true, volume: 0.16 });
+	let sceneAlive = true;
+	onSceneLeave(() => {
+		sceneAlive = false;
+	});
 
 	const room = { ...ROOMS[G.room], ...STORY.rooms[G.room] };
 	const grid = room.map.map((r) => r.split(""));
@@ -330,11 +336,12 @@ scene("game", (data = {}) => {
 	let gateOpen = false;
 	let gateVisual = null;
 	let miniBossSpawned = false;
-	let crate = null;
-	let crateGX = -1;
-	let crateGY = -1;
-	let npc = null;
-	let exitObj = null;
+	const crates = [];
+	const cratePlates = [];
+	const exitObjs = [];
+	let wellPos = null;
+	let leverObjs = [];
+	let arenaCleared = false;
 	let boss = null;
 	let bossBar = null;
 	let bossBarBg = null;
@@ -353,14 +360,22 @@ scene("game", (data = {}) => {
 	const floorTints = {
 		well: [185, 174, 196], chapel: [150, 185, 190], market: [198, 176, 146],
 		bridge: [150, 170, 205], silentfire: [190, 150, 130], bottom: [190, 130, 135],
+		fork: [170, 160, 205], arena: [195, 155, 140], library: [150, 170, 205],
 	};
 	const wallTints = {
 		well: [178, 166, 190], chapel: [155, 188, 194], market: [196, 172, 145],
 		bridge: [155, 172, 205], silentfire: [195, 155, 132], bottom: [192, 138, 142],
+		fork: [165, 155, 200], arena: [190, 150, 135], library: [150, 165, 200],
 	};
 
 	function addFloor(tx, ty) {
 		const p = vec2(tx * TILE, ty * TILE);
+		if (room.name === "town") {
+			return add([sprite("grass"), pos(p.x, p.y), z(1), opacity(1)]);
+		}
+		if (room.name === "home") {
+			return add([sprite("wood_floor"), pos(p.x, p.y), z(1), opacity(1)]);
+		}
 		const v = (tx * 7 + ty * 13) % 8 + 1;
 		const floor = add([sprite(`floor_${v}`), pos(p.x, p.y), z(1), color(rgb(...(floorTints[room.name] || floorTints.well))), opacity(1)]);
 		if ((tx + ty) % 3 === 0) {
@@ -371,9 +386,14 @@ scene("game", (data = {}) => {
 
 	function addWall(tx, ty) {
 		const p = vec2(tx * TILE, ty * TILE);
-		const wt = wallTints[room.name] || wallTints.well;
-		add([sprite("wall_mid"), pos(p.x, p.y), z(p.y + 8), color(rgb(...wt))]);
-		add([sprite("wall_top_mid"), pos(p.x, p.y - TILE), z(p.y + 8), color(rgb(wt[0] + 20, wt[1] + 20, wt[2] + 20))]);
+		if (room.name === "home") {
+			add([sprite("wall_beige"), pos(p.x, p.y), z(p.y + 8)]);
+			add([sprite("wall_base"), pos(p.x, p.y - TILE), z(p.y + 8)]);
+		} else {
+			const wt = wallTints[room.name] || wallTints.well;
+			add([sprite("wall_mid"), pos(p.x, p.y), z(p.y + 8), color(rgb(...wt))]);
+			add([sprite("wall_top_mid"), pos(p.x, p.y - TILE), z(p.y + 8), color(rgb(wt[0] + 20, wt[1] + 20, wt[2] + 20))]);
+		}
 		const col = add([
 			rect(TILE, TILE),
 			pos(p.x + 8, p.y + 8),
@@ -386,6 +406,16 @@ scene("game", (data = {}) => {
 			"wall",
 		]);
 		walls.push(col);
+	}
+
+	function addTree(tx, ty) {
+		const p = vec2(tx * TILE, ty * TILE);
+		add([sprite("tree"), pos(p.x, p.y), z(p.y + 10)]);
+		walls.push(add([
+			rect(TILE, TILE), pos(p.x + 8, p.y + 8), anchor("center"),
+			area({ width: TILE, height: TILE }), body({ isStatic: true }),
+			color(rgb(0, 0, 0)), opacity(0), z(3), "tree",
+		]));
 	}
 
 	function addPit(tx, ty) {
@@ -410,7 +440,10 @@ scene("game", (data = {}) => {
 			const c = grid[ty][tx];
 			if (c === "#") addWall(tx, ty);
 			else if (c === "~") addPit(tx, ty);
-			else if (c === "x") {
+			else if (c === "T") {
+				addFloor(tx, ty);
+				addTree(tx, ty);
+			} else if (c === "x") {
 				const floor = addFloor(tx, ty);
 				collapsers.push({ tx, ty, floor, triggered: false, hole: null });
 			} else addFloor(tx, ty);
@@ -422,7 +455,7 @@ scene("game", (data = {}) => {
 		addWall(8, 9);
 		addWall(10, 9);
 	}
-	if (room.name === "market") {
+	if (room.name === "market" || room.name === "arena" || room.name === "library") {
 		for (const yy of [1, 2, 3, 4, 6, 7, 8, 9]) addWall(16, yy);
 	}
 
@@ -430,9 +463,11 @@ scene("game", (data = {}) => {
 		[1, 1, "column"], [18, 1, "column"], [1, 9, "column"], [18, 9, "column"],
 		[2, 1, "skull"], [17, 9, "skull"],
 	];
-	for (const [tx, ty, spr] of propsAt) {
-		if (grid[ty][tx] === "#") continue;
-		add([sprite(spr), pos(tx * TILE + 8, ty * TILE + 16), anchor("bot"), z(ty * TILE + 15)]);
+	if (room.name !== "town" && room.name !== "home") {
+		for (const [tx, ty, spr] of propsAt) {
+			if (grid[ty][tx] === "#") continue;
+			add([sprite(spr), pos(tx * TILE + 8, ty * TILE + 16), anchor("bot"), z(ty * TILE + 15)]);
+		}
 	}
 
 	if (room.name === "chapel") {
@@ -450,6 +485,75 @@ scene("game", (data = {}) => {
 		add([sprite("wall_banner_red"), pos(9 * TILE, 0), z(2)]);
 		add([sprite("skull"), pos(9 * TILE + 8, 1 * TILE + 8), anchor("center"), z(20)]);
 	}
+
+	function buildTown() {
+		// dirt crossroad
+		for (let tx = 1; tx < 19; tx++) {
+			if (grid[5][tx] !== "T" && grid[5][tx] !== "W") add([sprite("dirt"), pos(tx * TILE, 5 * TILE), z(1.5)]);
+		}
+		for (let ty = 1; ty < 10; ty++) {
+			for (const tx of [9, 10]) {
+				if (grid[ty][tx] !== "T" && grid[ty][tx] !== "W") add([sprite("dirt"), pos(tx * TILE, ty * TILE), z(1.5)]);
+			}
+		}
+
+		const houses = [[2, 2], [14, 2], [2, 7], [14, 7]];
+		for (const [hx, hy] of houses) {
+			for (let x = 0; x < 3; x++) {
+				add([sprite("roof_red"), pos((hx + x) * TILE, hy * TILE), z(hy * TILE + 10)]);
+				add([sprite("wall_stone"), pos((hx + x) * TILE, (hy + 1) * TILE), z((hy + 1) * TILE + 10)]);
+			}
+			add([sprite("door"), pos((hx + 1) * TILE, (hy + 1) * TILE), z((hy + 1) * TILE + 11)]);
+			add([
+				rect(48, 32), pos((hx + 1.5) * TILE, (hy + 1) * TILE), anchor("center"),
+				area({ width: 48, height: 32 }), body({ isStatic: true }),
+				color(rgb(0, 0, 0)), opacity(0), z(3), "house",
+			]);
+		}
+
+		// stone well
+		const ring = [
+			[8, 4], [9, 4], [10, 4],
+			[8, 5], [10, 5], [8, 6], [10, 6],
+		];
+		for (const [tx, ty] of ring) {
+			add([sprite("wall_stone"), pos(tx * TILE, ty * TILE), z(ty * TILE + 12)]);
+			add([
+				rect(TILE, TILE), pos(tx * TILE + 8, ty * TILE + 8), anchor("center"),
+				area({ width: TILE, height: TILE }), body({ isStatic: true }),
+				color(rgb(0, 0, 0)), opacity(0), z(3), "wellring",
+			]);
+		}
+		add([sprite("hole"), pos(9 * TILE, 5 * TILE), scale(1.5), z(9 * TILE + 13)]);
+		add([sprite("glow"), pos(9 * TILE + 8, 5 * TILE + 8), anchor("center"), scale(1.2), opacity(0.28), z(9 * TILE + 12)]);
+		add([
+			rect(TILE, TILE), pos(9 * TILE + 8, 5 * TILE + 8), anchor("center"),
+			area({ width: TILE, height: TILE }), body({ isStatic: true }),
+			color(rgb(0, 0, 0)), opacity(0), z(3), "wellhole",
+		]);
+		wellPos = center(9, 6);
+	}
+
+	function buildHome() {
+		// bed: code-composed from pixel blocks so Zeynep can lie in it
+		const bedX = 3 * TILE;
+		const bedY = 2 * TILE;
+		add([rect(34, 20), pos(bedX + 17, bedY + 12), anchor("center"), color(rgb(76, 49, 39)), outline(2, rgb(28, 18, 14)), z(bedY + 8)]);
+		add([rect(28, 13), pos(bedX + 18, bedY + 13), anchor("center"), color(rgb(120, 52, 48)), z(bedY + 9)]);
+		add([rect(9, 7), pos(bedX + 7, bedY + 10), anchor("center"), color(rgb(224, 210, 178)), z(bedY + 10)]);
+		const zey = add([
+			sprite("sister", { frame: 0 }), pos(bedX + 21, bedY + 12), anchor("center"),
+			rotate(90), scale(0.85), color(rgb(210, 200, 210)), opacity(0.9), z(bedY + 11),
+		]);
+		zey.stop();
+		add([text("Zeynep", { size: 4, font: "pixel" }), pos(bedX + 17, bedY - 2), anchor("center"), color(rgb(210, 185, 160)), z(500)]);
+		add([sprite("glow"), pos(7 * TILE, 2 * TILE + 10), anchor("center"), scale(0.7), opacity(0.22), z(30)]);
+		// a small table
+		add([sprite("crate"), pos(6 * TILE + 8, 3 * TILE + 12), anchor("center"), z(3 * TILE + 10)]);
+	}
+
+	if (room.name === "town") buildTown();
+	if (room.name === "home") buildHome();
 
 	/* ---------------- gates, plates, crate ---------------- */
 	function makeGate(tx, ty, orientation = "h") {
@@ -571,9 +675,7 @@ scene("game", (data = {}) => {
 
 	function makeCrate(tx, ty) {
 		const p = center(tx, ty);
-		crateGX = tx;
-		crateGY = ty;
-		crate = add([
+		const obj = add([
 			sprite("crate"),
 			pos(p.x, p.y),
 			anchor("center"),
@@ -582,31 +684,44 @@ scene("game", (data = {}) => {
 			body({ isStatic: true }),
 			"crate",
 		]);
-		return crate;
+		crates.push({ obj, gx: tx, gy: ty });
+		return obj;
 	}
 
 	function tryPushCrate() {
-		if (!crate || G.solved[G.room]) return;
-		const d = player.pos.sub(crate.pos);
+		if (G.solved[G.room] || crates.length === 0) return;
+		let nearest = null;
+		let best = 999;
+		for (const c of crates) {
+			const d = c.obj.pos.dist(player.pos);
+			if (d < best) {
+				best = d;
+				nearest = c;
+			}
+		}
+		if (!nearest || best > 28) return;
+		const d = player.pos.sub(nearest.obj.pos);
 		let dx = 0;
 		let dy = 0;
 		if (Math.abs(d.x) > Math.abs(d.y)) dx = d.x < 0 ? 1 : -1;
 		else dy = d.y < 0 ? 1 : -1;
-		const nx = crateGX + dx;
-		const ny = crateGY + dy;
+		const nx = nearest.gx + dx;
+		const ny = nearest.gy + dy;
 		if (!floorAt(nx, ny)) return;
-		crateGX = nx;
-		crateGY = ny;
+		if (crates.some((c) => c.gx === nx && c.gy === ny)) return;
+		nearest.gx = nx;
+		nearest.gy = ny;
 		const target = center(nx, ny);
-		tween(crate.pos, target, 0.16, (v) => (crate.pos = v));
-		crate.z = target.y + 8;
+		tween(nearest.obj.pos, target, 0.16, (v) => (nearest.obj.pos = v));
+		nearest.obj.z = target.y + 8;
 		play("step", { volume: 0.35 });
 		wait(0.18, () => {
-			if (room.name === "market" && grid[ny]?.[nx] === "p") {
+			const allPressed = cratePlates.length > 0 && cratePlates.every((p) => crates.some((c) => c.gx === p.tx && c.gy === p.ty));
+			if (room.name === "market" && allPressed) {
 				G.solved[G.room] = true;
 				openGate();
-				setObjective("Kapı açıldı. Aşağı in.");
-				floatText(crate.pos, "TAŞ BASKIDA", [180, 220, 255]);
+				setObjective("İki taş da basılı. Kapı açıldı.");
+				floatText(nearest.obj.pos, "İKİ TAŞ BASKIDA", [180, 220, 255]);
 			}
 		});
 	}
@@ -628,7 +743,6 @@ scene("game", (data = {}) => {
 			sprite("hero", { anim: "idle" }),
 			pos(p.x, p.y),
 			anchor("center"),
-			outline(1, rgb(12, 12, 18), 0.9),
 			area({ scale: vec2(0.62, 0.42), offset: vec2(0, 7) }),
 			body(),
 			z(p.y + 14),
@@ -686,12 +800,15 @@ scene("game", (data = {}) => {
 
 	function updateHUD() {
 		for (let i = 0; i < heartObjs.length; i++) heartObjs[i].hidden = i >= G.hearts;
-		oilLabel.text = G.hasFlare ? (G.flareCd > 0 ? "KOR…" : "YAĞ • Q:KOR") : "YAĞ";
+		const oilLabelText = G.hasFlare ? (G.flareCd > 0 ? "KOR…" : "YAĞ • Q:KOR") : "YAĞ";
+		if (oilLabel.text !== oilLabelText) oilLabel.text = oilLabelText;
 		const ratio = G.oil / G.maxOil;
 		oilBar.width = Math.max(0, 50 * U * ratio);
-		memoryText.text = `HATIRA ${G.memories}/3`;
+		const memText = `HATIRA ${G.memories}/3`;
+		if (memoryText.text !== memText) memoryText.text = memText;
 		if (G.combo >= 2) {
-			comboText.text = `KOMBO x${G.combo}`;
+			const comboTxt = `KOMBO x${G.combo}`;
+			if (comboText.text !== comboTxt) comboText.text = comboTxt;
 			comboText.opacity = 1;
 		} else comboText.opacity = 0;
 	}
@@ -963,6 +1080,18 @@ scene("game", (data = {}) => {
 		floatText(vec2(b.x, b.baseY - 8), "YANDI", [255, 200, 100]);
 	}
 
+	function checkLibrary() {
+		if (room.name !== "library" || G.solved[G.room]) return;
+		const target = [true, false, true];
+		if (leverObjs.length === 3 && leverObjs.every((l, i) => l.up === target[i])) {
+			G.solved[G.room] = true;
+			openGate();
+			G.hasFlare = true;
+			setObjective("Desen doğru. Kapı açıldı, kor senin.");
+			floatText(player.pos, "YUKARI-AŞAĞI-YUKARI", [255, 220, 150]);
+		}
+	}
+
 	function checkBraziers() {
 		if (room.name !== "silentfire" || G.solved[G.room] || miniBossSpawned) return;
 		if (braziers.length > 0 && braziers.every((b) => b.lit)) {
@@ -982,13 +1111,13 @@ scene("game", (data = {}) => {
 	for (let ty = 0; ty < 11; ty++) {
 		for (let tx = 0; tx < 20; tx++) {
 			const c = grid[ty][tx];
-			if (c === "g" || c === "s" || c === "i" || c === "o" || c === "c" || c === "z" || c === "B") {
+			if (c === "g" || c === "s" || c === "i" || c === "o" || c === "c" || c === "z" || (c === "B" && room.name !== "home")) {
 				spawnEnemy({ g: "goblin", s: "skelet", i: "imp", o: "orc", c: "chort", z: "bigzombie", B: "demon" }[c], tx, ty);
 			}
 			if (c === "O") {
 				spawnOil(tx * TILE + 8, ty * TILE + 10, 35);
 			}
-			if (c === "C") {
+			if (c === "H") {
 				const key = `${G.room}:${tx}:${ty}`;
 				if (!G.openedChests[key]) {
 					const p = center(tx, ty);
@@ -997,6 +1126,15 @@ scene("game", (data = {}) => {
 						area({ width: 14, height: 14 }), "chest", { opened: false, key },
 					]);
 				}
+			}
+			if (c === "X") makeCrate(tx, ty);
+			if (c === "l") {
+				const p = center(tx, ty);
+				const lev = add([
+					sprite("lever_left"), pos(p.x, p.y), anchor("center"), z(p.y + 6),
+					"lever", { up: false, tx, ty },
+				]);
+				leverObjs.push(lev);
 			}
 			if (c === "F") spawnBrazier(tx, ty);
 			if (c === "M") {
@@ -1015,9 +1153,10 @@ scene("game", (data = {}) => {
 
 	// special entities
 	if (room.name === "chapel") {
-		makePlate(6, 6, "red");
-		makePlate(10, 6, "blue");
-		makePlate(14, 6, "red");
+		makePlate(4, 6, "red");
+		makePlate(8, 6, "blue");
+		makePlate(12, 6, "red");
+		makePlate(16, 6, "blue");
 		if (!G.solved[G.room]) makeGate(9, 8, "h");
 		else openGate(true);
 	}
@@ -1025,9 +1164,18 @@ scene("game", (data = {}) => {
 		if (!G.solved[G.room]) makeGate(9, 8, "h");
 		else openGate(true);
 	}
+	if (room.name === "arena" || room.name === "library") {
+		if (!G.solved[G.room]) makeGate(15, 5, "v");
+		else openGate(true);
+	}
+	if (room.name === "library") {
+		const clue = uiText("1: YUKARI   •   2: AŞAĞI   •   3: YUKARI", 160, 34, 6, [190, 210, 230]);
+		clue.use(anchor("top"));
+	}
 	if (room.name === "market") {
-		makeCrate(8, 5);
-		makePlate(12, 5, "blue");
+		makePlate(12, 3, "blue");
+		makePlate(12, 7, "blue");
+		cratePlates.push({ tx: 12, ty: 3 }, { tx: 12, ty: 7 });
 		if (!G.solved[G.room]) makeGate(15, 5, "v");
 		else openGate(true);
 	}
@@ -1054,28 +1202,21 @@ scene("game", (data = {}) => {
 		});
 	}
 
-	// NPC
-	if (room.npc) {
-		const p = center(4, 2);
-		npc = add([
-			sprite(room.npc, { anim: "idle" }), pos(p.x, p.y), anchor("center"),
-			z(p.y + 14), "npc", { type: room.npc },
-		]);
-		npc.play("idle");
-	}
-
-	// exit
+	// exits and doors
 	for (let ty = 0; ty < 11; ty++) {
 		for (let tx = 0; tx < 20; tx++) {
-			if (grid[ty][tx] === "E") {
-				const p = center(tx, ty);
+			const marker = grid[ty][tx];
+			if (marker !== "E" && marker !== "D" && marker !== "L" && marker !== "R") continue;
+			const p = center(tx, ty);
+			if (marker === "E") {
 				add([sprite("floor_ladder"), pos(p.x, p.y), anchor("center"), z(3), opacity(0.9)]);
 				add([sprite("glow"), pos(p.x, p.y), anchor("center"), scale(1.4), opacity(0.25), z(4)]);
-				exitObj = add([
-					rect(14, 14), pos(p.x, p.y), anchor("center"), area({ width: 14, height: 14 }),
-					color(rgb(0, 0, 0)), opacity(0), z(5), "exit",
-				]);
+			} else {
+				add([sprite("door"), pos(p.x - 8, p.y - 8), z(p.y + 8)]);
+				add([sprite("glow"), pos(p.x, p.y), anchor("center"), scale(1.1), opacity(0.2), z(4)]);
 			}
+			const target = room.exits?.[marker] ?? G.room + 1;
+			exitObjs.push({ pos: p, target, marker });
 		}
 	}
 
@@ -1084,13 +1225,15 @@ scene("game", (data = {}) => {
 	const vignette = add([sprite("vignette"), pos(0, 0), scale(U), z(9000), opacity(0.75), fixed()]);
 	add([rect(W, H), pos(0, 0), color(rgb(0, 0, 0)), opacity(0.04), z(8999)]);
 	const roomTints = {
-		well: [55, 35, 28], chapel: [25, 55, 62], market: [65, 45, 25],
+		home: [70, 38, 28], town: [28, 45, 65], well: [55, 35, 28],
+		fork: [45, 35, 65], arena: [65, 35, 30], library: [30, 48, 70],
+		chapel: [25, 55, 62], market: [65, 45, 25],
 		bridge: [25, 35, 65], silentfire: [65, 32, 22], bottom: [70, 20, 30],
 	};
 	add([rect(W, H), pos(0, 0), color(rgb(...(roomTints[room.name] || roomTints.well))), opacity(0.055), z(10)]);
 
 	const fog = [];
-	for (let i = 0; i < 4; i++) {
+	for (let i = 0; i < 2; i++) {
 		const f = add([
 			sprite("smoke"), pos(rand(0, W), rand(24, 150)), anchor("center"),
 			scale(rand(0.35, 0.6)), color(rgb(120, 120, 150)), opacity(rand(0.035, 0.075)), z(6),
@@ -1099,6 +1242,7 @@ scene("game", (data = {}) => {
 	}
 
 	function spawnDust() {
+		if (!sceneAlive) return;
 		const d = add([
 			rect(1, 1), pos(rand(8, W - 8), rand(8, H - 8)),
 			color(rgb(200, 180, 140)), opacity(0), z(7),
@@ -1124,13 +1268,34 @@ scene("game", (data = {}) => {
 	updateHUD();
 	setObjective(room.objective);
 	showRoomCard();
-	if (!G.seen[G.room]) {
+	if (!G.seen[G.room] && room.name !== "home") {
 		G.seen[G.room] = true;
 		wait(2.8, () => showCaption(room.enter, 4.5));
 	}
-	wait(3.2, () => {
-		if (!dialogue) G.uiLocked = false;
-	});
+	if (room.name === "home" && !G.talked.oldman) {
+		G.uiLocked = true;
+		wait(2.8, () => {
+			const om = add([
+				sprite("priest", { anim: "run" }), pos(9 * TILE + 8, 8 * TILE + 8), anchor("center"),
+				scale(0.95), color(rgb(180, 175, 190)), z(8 * TILE + 18), "oldman",
+			]);
+			om.play("run");
+			tween(om.pos, vec2(7 * TILE + 8, 5 * TILE + 8), 1.1, (v) => (om.pos = v));
+			wait(1.15, () => {
+				om.play("idle");
+				startDialogue(STORY.dialogues.oldman, () => {
+					G.talked.oldman = true;
+					G.uiLocked = false;
+					setObjective("Kasabanın meydanındaki kuyuya git.");
+					showCaption(["Kapı açık. Meydana in."], 3);
+				});
+			});
+		});
+	} else {
+		wait(3.2, () => {
+			if (!dialogue) G.uiLocked = false;
+		});
+	}
 
 	/* ---------------- ghost apparition ---------------- */
 	function spawnGhost() {
@@ -1150,7 +1315,9 @@ scene("game", (data = {}) => {
 	}
 
 	function scheduleGhost() {
+		if (!sceneAlive) return;
 		wait(rand(7, 14), () => {
+			if (!sceneAlive) return;
 			if (!G.paused && !G.uiLocked && room.name !== "bottom") spawnGhost();
 			scheduleGhost();
 		});
@@ -1164,6 +1331,8 @@ scene("game", (data = {}) => {
 			get player() { return player; },
 			get attack() { return attack; },
 			get braziers() { return braziers; },
+			get exitObjs() { return exitObjs; },
+			get leverObjs() { return leverObjs; },
 		};
 	}
 
@@ -1255,16 +1424,25 @@ scene("game", (data = {}) => {
 		}
 	}
 
-	function tryExit() {
-		if (!exitObj || G.transitioning || G.uiLocked) return;
-		if (player.pos.dist(exitObj.pos) > 12) return;
+	function fadeToRoom(target) {
+		if (G.transitioning) return;
 		G.transitioning = true;
 		G.uiLocked = true;
 		play("open", { volume: 0.5 });
 		flash(rgb(255, 230, 190), 0.25);
 		const fadeOut = add([rect(W * U, H * U), pos(0, 0), color(rgb(0, 0, 0)), opacity(0), z(20001), fixed()]);
 		tween(0, 1, 0.32, (v) => (fadeOut.opacity = v));
-		wait(0.4, () => go("game", { room: G.room + 1 }));
+		wait(0.4, () => go("game", { room: target }));
+	}
+
+	function tryExit() {
+		if (G.transitioning || G.uiLocked || exitObjs.length === 0) return;
+		for (const ex of exitObjs) {
+			if (player.pos.dist(ex.pos) <= 12) {
+				fadeToRoom(ex.target);
+				return;
+			}
+		}
 	}
 
 	player.onCollide("oil", (o) => {
@@ -1316,33 +1494,28 @@ scene("game", (data = {}) => {
 				return;
 			}
 		}
-		if (crate && crate.pos.dist(player.pos) < 26) {
+		if (room.name === "town" && wellPos && player.pos.dist(wellPos) < 30) {
+			startDialogue(STORY.dialogues.well, () => fadeToRoom(2));
+			return;
+		}
+		if (crates.some((c) => c.obj.pos.dist(player.pos) < 28)) {
 			tryPushCrate();
 			return;
 		}
-		if (npc && npc.pos.dist(player.pos) < 30) {
-			if (npc.type === "priest") {
-				startDialogue(STORY.dialogues.priest, () => {
-					if (!G.talked.priest) {
-						G.talked.priest = true;
-						if (G.hearts < G.maxHearts) G.hearts++;
-						floatText(player.pos, "RAHİP SENİ ONARDI", [255, 220, 170]);
-					}
-				});
-			} else {
-				startDialogue(STORY.dialogues.merchant, () => {
-					if (!G.talked.merchant) {
-						G.talked.merchant = true;
-						G.hasFlare = true;
-						floatText(player.pos, "KOR KAZANDIN — Q", [255, 210, 120]);
-					}
-				});
+		for (const lev of leverObjs) {
+			if (lev.pos.dist(player.pos) < 26) {
+				lev.up = !lev.up;
+				lev.use(sprite(lev.up ? "lever_right" : "lever_left"));
+				play("select", { volume: 0.4 });
+				shake(1.5);
+				checkLibrary();
+				return;
 			}
-			return;
 		}
 	});
 
 	onKeyPress(["j", "x"], attack);
+	onMousePress("right", attack);
 	onKeyPress("q", flareBurst);
 	onKeyPress("escape", () => {
 		if (G.uiLocked || dialogue) return;
@@ -1448,13 +1621,29 @@ scene("game", (data = {}) => {
 
 		let promptTarget = null;
 		let promptLabel = "E";
-		if (npc && npc.pos.dist(player.pos) < 30) promptTarget = npc;
-		else if (crate && crate.pos.dist(player.pos) < 26) promptTarget = crate;
-		else {
-			for (const c of get("chest")) {
-				if (!c.opened && c.pos.dist(player.pos) < 24) {
-					promptTarget = c;
+		if (room.name === "town" && wellPos && player.pos.dist(wellPos) < 30) {
+			promptTarget = { pos: wellPos };
+		} else {
+			for (const c of crates) {
+				if (c.obj.pos.dist(player.pos) < 28) {
+					promptTarget = c.obj;
 					break;
+				}
+			}
+			if (!promptTarget) {
+				for (const lev of leverObjs) {
+					if (lev.pos.dist(player.pos) < 26) {
+						promptTarget = lev;
+						break;
+					}
+				}
+			}
+			if (!promptTarget) {
+				for (const c of get("chest")) {
+					if (!c.opened && c.pos.dist(player.pos) < 24) {
+						promptTarget = c;
+						break;
+					}
 				}
 			}
 			if (!promptTarget && G.hasFlare) {
@@ -1469,7 +1658,7 @@ scene("game", (data = {}) => {
 		}
 		if (promptTarget) {
 			interactPrompt.hidden = false;
-			interactPrompt.text = promptLabel;
+			if (interactPrompt.text !== promptLabel) interactPrompt.text = promptLabel;
 			interactPrompt.pos = vec2(promptTarget.pos.x, promptTarget.pos.y - 24);
 			interactPrompt.z = 6000;
 		} else {
@@ -1651,6 +1840,14 @@ scene("game", (data = {}) => {
 					e.play("idle");
 				}
 			}
+		}
+
+		if (room.name === "arena" && !G.solved[G.room] && enemies.length > 0 && enemies.every((e) => e.dead)) {
+			G.solved[G.room] = true;
+			openGate();
+			if (G.hearts < G.maxHearts) G.hearts++;
+			setObjective("Bekçiler düştü. Mührü aldın. Sağdaki kapı açık.");
+			floatText(player.pos, "MÜHÜR + CAN", [255, 210, 130]);
 		}
 
 		if (!G.uiLocked && enemyGrace <= 0) {

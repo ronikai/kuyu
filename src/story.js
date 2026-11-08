@@ -2,11 +2,29 @@ export const STORY = {
 	intro: [
 		"Kız kardeşim Zeynep üç gündür uyumuyor.",
 		"Ateşi her gece biraz daha düşüyor. Köyün hekimi çoktan umudunu kesti.",
-		"Yaşlılar kuyuyu fısıldar: “Dileğini söyle, bedelini o seçer.”",
-		"İpi belime doladım. Aşağıda bir şey beni bekliyor.",
-		"Ve o şey, Zeynep’in sesiyle konuşuyor.",
+		"Bu gece kapımızı yaşlı bir amca çaldı.",
+		"Kuyudan bahsetti. Dileklerden. Ve bedellerden.",
+		"Sonra gitti. Kapı hâlâ açık.",
 	],
 	rooms: [
+		{
+			title: "EV",
+			subtitle: "Zeynep'in odası. Ateş, yağmur, bir kapı.",
+			objective: "Yaşlı amcayı dinle.",
+			enter: [
+				"Zeynep üç gündür aynı yatakta. Nefesi cam gibi.",
+				"Kapı vuruldu. Yaşlı amca içeri girdi.",
+			],
+		},
+		{
+			title: "KASABA MEYDANI",
+			subtitle: "Kuyu, kasabanın ortasında bir ağız gibi açık.",
+			objective: "Kuyuya yaklaş ve E ile in.",
+			enter: [
+				"Meydan boş. Herkes perdelerin arkasından bakıyor.",
+				"Yaşlı amcanın sözleri hâlâ kulağında: “Bedelini o seçer.”",
+			],
+		},
 		{
 			title: "I. KUYU BAŞI",
 			subtitle: "İlk kat. Duvarlar nefes alıyor.",
@@ -17,48 +35,75 @@ export const STORY = {
 			],
 		},
 		{
-			title: "II. BOĞULMUŞ ŞAPEL",
-			subtitle: "Suyun altında hâlâ dua eden bir rahip var.",
-			objective: "Duvardaki renkleri sırayla bas. Kapı açılsın.",
+			title: "II. AYRIM",
+			subtitle: "Kuyu iki kapı açtı. İkisi de aynı yere iniyor.",
+			objective: "Bir yol seç: sol Kemik Bahçesi, sağ Sessiz Kütüphane.",
+			enter: [
+				"Soldan kemik kokusu geliyor. Sağdan kâğıt hışırtısı.",
+				"Kuyu fısıldıyor: “Seç. Ama seçtiğini unutma.”",
+			],
+		},
+		{
+			title: "III. KEMİK BAHÇESİ",
+			subtitle: "Kemiklerden bir bahçe. Her adımda çatırdıyor.",
+			objective: "Tüm bekçileri yen. Mührü al.",
+			enter: [
+				"Toprak yerine kemik. Ağaç yerine kaburga.",
+				"Çıkıştaki mühür, ancak bekçiler düşünce açılır.",
+			],
+		},
+		{
+			title: "IV. SESSİZ KÜTÜPHANE",
+			subtitle: "Raflar boş. Ama sayfalar hâlâ fısıldıyor.",
+			objective: "Kaldıraçları YUKARI - AŞAĞI - YUKARI yap.",
+			enter: [
+				"Duvarda üç kaldıraç deseni var: YUKARI, AŞAĞI, YUKARI.",
+				"Kâğıtların arasından bir çocuk sesi gülüyor.",
+			],
+		},
+		{
+			title: "V. BOĞULMUŞ ŞAPEL",
+			subtitle: "Suyun altında hâlâ dua eden bir şey var.",
+			objective: "Duvardaki 4 rengi sırayla bas: KIRMIZI-MAVİ-KIRMIZI-MAVİ.",
 			enter: [
 				"Şapelin zemini diz boyu su. Ama su kımıldamıyor.",
-				"Duvarda üç işaret var: KIRMIZI, MAVİ, KIRMIZI.",
+				"Duvarda dört işaret var: KIRMIZI, MAVİ, KIRMIZI, MAVİ.",
 			],
 		},
 		{
-			title: "III. KEMİK PAZARI",
+			title: "VI. KEMİK PAZARI",
 			subtitle: "Burada her şeyin bir fiyatı var.",
-			objective: "Sandığı mavi taşa it. Kapıyı aç.",
+			objective: "İki sandığı iki mavi taşa it. İkisi de basılı kalsın.",
 			enter: [
 				"Tezgâhlar boş. Ama paranın sesi hâlâ duyuluyor.",
-				"Tüccar gülümsüyor. Elleri yok.",
+				"İki sandık, iki taş. Kapı ikisi de basılınca açılır.",
 			],
 		},
 		{
-			title: "IV. KIRIK KÖPRÜ",
+			title: "VII. KIRIK KÖPRÜ",
 			subtitle: "Kuyu, sabırsızları sevmez.",
-			objective: "Taşa bas, kapıyı aç ve köprüyü geç.",
+			objective: "Taşa bas, kapıyı aç ve köprüyü geç. Çöken taşlara dikkat et.",
 			enter: [
 				"Köprü, kemiklerden örülmüş gibi. Altında hiçbir şey yok.",
 				"Uzakta bir çan sesi. Kapı yalnızca birkaç nefes açık kalır.",
 			],
 		},
 		{
-			title: "V. SESSİZ ATEŞ",
+			title: "VIII. SESSİZ ATEŞ",
 			subtitle: "Kuyu, ışığı senden alır; karşılığında yol verir.",
-			objective: "Üç ocağı korla yak. Kapı açılsın.",
+			objective: "Dört ocağı Q ile yak. Dördüncü ateş bekçiyi uyandırır.",
 			enter: [
-				"Üç taş ocak var. Hiçbiri yanmıyor.",
+				"Dört taş ocak var. Hiçbiri yanmıyor.",
 				"Fenerin yağı azalıyor. Kor, karanlığı bir an için yarar.",
 			],
 		},
 		{
-			title: "VI. DİP",
+			title: "IX. DİP",
 			subtitle: "Kuyunun kalbi. Ve kardeşimin sesi.",
 			objective: "Bekçiyi yen. Sonra seç.",
 			enter: [
 				"Burada su yok. Sadece nefes ve tik-tak.",
-				"Karanlığın ortasında bir şey, Zeynep’in yüzüyle başını kaldırıyor.",
+				"Karanlığın ortasında bir şey, Zeynep'in yüzüyle başını kaldırıyor.",
 			],
 		},
 	],
@@ -68,15 +113,18 @@ export const STORY = {
 		"Bir hatıra: Rahip, kuyunun sesini duyduğu gün imanını değil, kızının adını kaybetti.",
 	],
 	dialogues: {
-		priest: [
-			"Rahip: “Ben de bir dilek tuttum. Şimdi suyun altında dua ediyorum.”",
-			"Rahip: “Kuyu istediğini verir. Ama önce neyi kaybettiğini sorar.”",
-			"Rahip: “Renkleri hatırla. Kırmızı başlar, mavi nefes alır, kırmızı bitirir.”",
+		oldman: [
+			"Yaşlı Amca: “Zeynep'in ateşi dinmiyor, değil mi?”",
+			"Yaşlı Amca: “Kasabanın ortasındaki kuyu... ona bir dilek söylersen gerçekleştirir.”",
+			"Yaşlı Amca: “Ama bedeli vardır. Kuyu senden bir şey alır. Bazen bir eşya, bazen bir hatıra, bazen bir isim.”",
+			"Yaşlı Amca: “Ben de yıllar önce bir dilek tuttum. Şimdi kim olduğumu hatırlamıyorum.”",
+			"Yaşlı Amca: “Git. Ama ne verdiğini iyi düşün.”",
 		],
-		merchant: [
-			"Tüccar: “Altın istedim. Kuyu bana altın verdi. Sonra ellerimi aldı.”",
-			"Tüccar: “Dibinde bir bekçi var. Seni tanıyor. Kardeşinin yüzüyle bakıyor.”",
-			"Tüccar: “Sandığı mavi taşa sürükle. Kapı açılır. Ama acele et.”",
+		well: [
+			"Kuyu: “Bir dilek söyle.”",
+			"Kerem: “Zeynep'i iyileştir.”",
+			"Kuyu: “Bedelini ben seçerim.”",
+			"Kuyu: “Aşağı gel.”",
 		],
 		boss: [
 			"Bekçi: “Onu geri getiremem.”",
