@@ -72,7 +72,7 @@ export function loadAssets(k) {
 	k.loadSprite("weapon_regular_sword", "assets/0x72/weapons/weapon_regular_sword.png");
 	k.loadSprite("weapon_rusty_sword", "assets/0x72/weapons/weapon_rusty_sword.png");
 
-	for (const w of ["grass", "dirt", "water", "flowers", "wood_floor", "wall_beige", "wall_base", "tree", "roof_red", "wall_stone", "door", "town_bg"]) {
+	for (const w of ["grass", "dirt", "water", "flowers", "wood_floor", "wall_beige", "wall_base", "tree", "roof_red", "wall_stone", "door", "bed", "table", "chair", "shelf", "window", "town_bg"]) {
 		k.loadSprite(w, `assets/world/${w}.png`);
 	}
 
@@ -89,6 +89,9 @@ export function loadAssets(k) {
 
 	const sfx = ["swing", "hit", "hurt", "step", "break", "pickup", "open", "ghost", "select", "talk", "roar"];
 	for (const s of sfx) k.loadSound(s, `assets/kenney/sfx/${s}.ogg`);
+	for (const s of ["swing2", "slice", "step2", "door", "coins", "click2", "pot", "creak", "book", "cloth"]) {
+		k.loadSound(s, `assets/kenney/sfx2/${s}.ogg`);
+	}
 	k.loadSound("ending_jingle", "assets/kenney/music/ending.ogg");
 	k.loadSound("title_jingle", "assets/kenney/music/title.ogg");
 	k.loadSound("ambient", "assets/ambient/drone.wav");

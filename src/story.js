@@ -80,12 +80,12 @@ export const STORY = {
 			],
 		},
 		{
-			title: "VII. KIRIK KÖPRÜ",
-			subtitle: "Kuyu, sabırsızları sevmez.",
-			objective: "Taşa bas, kapıyı aç ve köprüyü geç. Çöken taşlara dikkat et.",
+			title: "VII. KARANLIK GEÇİT",
+			subtitle: "Kuyu, yerini bilmediğin dikenlerle oynar.",
+			objective: "Geçidi geç. Dikenler sabit; ama yerlerini ancak yaklaşınca anlarsın.",
 			enter: [
-				"Köprü, kemiklerden örülmüş gibi. Altında hiçbir şey yok.",
-				"Uzakta bir çan sesi. Kapı yalnızca birkaç nefes açık kalır.",
+				"Köprü yok. Sadece dar bir geçit ve zemine gömülü dikenler var.",
+				"Dikenler hareket etmiyor. Bu yüzden daha da tehlikeliler.",
 			],
 		},
 		{

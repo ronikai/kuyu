@@ -4,6 +4,19 @@
 
 2.5D görünümlü, top-down piksel korku-aksiyon-macera oyunu. Evinde hasta kız kardeşi Zeynep'in başında bekleyen genç bir maceracı, yaşlı bir amcanın anlattığı lanetli kuyuya iner. Kuyu konuşur, hatıraları toplar ve sonunda bir seçim bırakır. Kasaba, ev, iki yol ayrımı ve dokuz kuyu katı; toplam 11 oynanabilir alan.
 
+![Ana Menü](preview/menu.png)
+
+## Ana Menü
+
+Açılışta ana menü gelir:
+
+- **BAŞLA** — yeni oyuna başlar.
+- **SES: AÇIK / KAPALI** — tüm sesleri açar/kapatır.
+- **ZORLUK: KOLAY / NORMAL / ZOR** — kolayda 5 can, normalde 3, zorda 2 can; düşman HP ve hızı da ölçeklenir.
+- **ÇIK** — veda ekranını gösterir.
+
+Menüden sonra oyun doğrudan evde başlar; siyah ekran/yazı intro’su yoktur.
+
 **Oyna (Surge):** https://kuyu-game.surge.sh  
 **Oyna (GitHub Pages):** https://ronikai.github.io/kuyu/  
 **Kaynak:** https://github.com/ronikai/kuyu  
@@ -43,9 +56,7 @@
 9. İki yol seçimi: Kemik Bahçesi (arena) veya Sessiz Kütüphane (bulmaca); seçim kalıcıdır.
 10. Renk sırası bulmacası: KIRMIZI-MAVİ-KIRMIZI-MAVİ; 4 plaka, yanlış sıra baştan başlatır.
 11. İki sandık/sokoban bulmacası: iki sandığı iki mavi taşa it; ikisi de basılı kalmalı.
-12. Zamanlı kapı parkuru: taşa bas, 5 saniyelik kapı açılırken dikenli köprüyü geç.
-13. Çöken köprü taşları: basınca kısa süre sonra düşer, oyuncuyu başlangıca atar.
-14. Diken tuzakları: aktif/pasif döngüsü, temas hasarı.
+12. Karanlık geçit: sabit ve gizli dikenler; animasyon yok, yaklaşınca hafif parlar, basınca hasar verir.
 15. Dört brazier/kor bulmacası: dört ocağı Q ile yak; dördüncü ateş mini-boss’u uyandırır.
 16. Kaldıraç bulmacası: YUKARI-AŞAĞI-YUKARI deseni; yanlış desende kapı kapalı kalır.
 17. Arena modu: tüm bekçiler yenilince mühür açılır ve can ödülü verilir.
@@ -53,7 +64,7 @@
 19. Mini-boss: Big Zombie; brazier bulmacasını bitirince doğar, ölünce kapı açılır.
 20. Hatıra toplama: 3 gizli hatıra; HUD sayacı ve 3. hatırada finalde gizli epilog.
 21. Boss: 2 faz, hücum telegraphı, yarı canda imp çağırma + 8 yönlü bomba halkası.
-22. Tam ekran hayalet: sadece kuyuya inince, rastgele aralıklarla tüm ekranı kaplayan, ses efektiyle beliren yarı saydam figür.
+22. Tam ekran hayalet: sadece kuyuda; bölüm geçişlerinde %35 ihtimalle ve 32–52 sn arayla, tüm ekranı kaplayan sesli figür.
 23. Ölüm izi: öldüğün yerde kuyuda bir hayalet kalır; sonraki denemede hafif ışık verir.
 24. İki final: “Kopyayı al” ve “Kuyuyu kır”; 3 hatıra ile gizli epilog.
 25. Duraklatma, game over, odadan devam, baştan başlama.
@@ -71,7 +82,7 @@
 | 5 | IV. Sessiz Kütüphane | Kaldıraç bulmacası, chort/imp, kor ödülü |
 | 6 | V. Boğulmuş Şapel | 4 renk sırası, iskelet/imp, hatıra |
 | 7 | VI. Kemik Pazarı | İki sandık bulmacası, ork/imp, hatıra |
-| 8 | VII. Kırık Köprü | Zamanlı kapı, diken + çöken taş parkuru |
+| 8 | VII. Karanlık Geçit | Sabit gizli dikenler; animasyon ve çöken zemin yok |
 | 9 | VIII. Sessiz Ateş | 4 brazier, chort, big zombie mini-boss, hatıra |
 | 10 | IX. Dip | Boss (2 faz) ve final seçimi |
 
@@ -80,6 +91,8 @@
 ![Sessiz Kütüphane](preview/library2.png)
 
 ![Boğulmuş Şapel](preview/chapel4.png)
+
+![Tam ekran hayalet](preview/ghost-final.png)
 
 Kuyu içinde oyuncuyla konuşan NPC yoktur; anlatım kuyunun sesi, hatıra metinleri ve çevre ile verilir.
 
@@ -95,11 +108,11 @@ Kuyu içinde oyuncuyla konuşan NPC yoktur; anlatım kuyunun sesi, hatıra metin
 
 ## UI
 
-Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkileşim ipucu, diyalog kutusu, boss can barı + “BEKÇİ” etiketi, duraklatma menüsü, final seçim menüsü, ev girişi, game over ve iki final ekranı.
+Ana menü (başla, ses aç/kapa, zorluk, çık), can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkileşim ipucu, diyalog kutusu, boss can barı + “BEKÇİ” etiketi, duraklatma menüsü, final seçim menüsü, ev girişi, game over ve iki final ekranı.
 
 ## Ses
 
-11 Kenney SFX (swing, hit, hurt, step, break, pickup, open, ghost, select, talk, roar) + final jingle + üretilmiş 12 sn’lik ambiyans drone’u (`assets/ambient/drone.wav`) + düşük canda kalp atışı. Sesler oyun içinde tetiklenir.
+Kenney RPG Audio + Impact/Interface paketlerinden katmanlı SFX’ler: kılıç savurma, kesme, hasar, bez hışırtısı, gerçek ayak sesi, kapı gıcırtısı, metal tık, sikke, kitap, brazier çatlaması ve hayalet fısıltısı. Ayrıca final jingle, üretilmiş 12 sn’lik ambiyans drone’u (`assets/ambient/drone.wav`) ve düşük canda kalp atışı. Sesler oyun içinde tetiklenir.
 
 ## 2.5D / görsel yaklaşım
 
@@ -109,6 +122,7 @@ Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkil
 - Kamera açısı sabittir; zoom 2×, normal odalar 20×11 tile (320×176 dünya pikseli).
 - Kasaba 40×24 tile: ön-render zemin + canlı ağaçlar, kamera oyuncuyu takip eder; diğer odalarda kamera sabittir.
 - Kasaba zemini tek PNG olarak ön-render edilir; bu sayede büyük harita 60 FPS’e yakın çalışır.
+- Ev, hazır Roguelike mobilyalarıyla döşenir: gerçek yatak, masa, sandalye, raf, pencere, kilim ve gece lambası.
 
 ## Puan listesi (jüri için)
 
@@ -125,9 +139,7 @@ Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkil
 10. İki yol seçimi (arena / kütüphane)
 11. 4 adımlı renk sırası bulmacası
 12. İki sandıklı sokoban bulmacası
-13. Zamanlı kapı parkuru
-14. Çöken köprü taşları
-15. Diken tuzağı döngüsü
+13. Sabit gizli diken geçidi
 16. 4 brazier/kor bulmacası
 17. Kaldıraç deseni bulmacası
 18. Arena dalgası / mühür
@@ -147,16 +159,16 @@ Genç maceracı (elf), kız kardeş (elf), yaşlı amca (wizard), hayalet (angel
 idle, run, hit: maceracı/kız kardeş/yaşlı amca (3×3); idle, run: hayalet/goblin/iskelet/imp/ork/chort/big zombie/demon (8×2) = 25 durum.
 
 ### Level (+2)
-11 oynanabilir alan (Ev, Kasaba, Kuyu Başı, Ayrım, Kemik Bahçesi, Sessiz Kütüphane, Boğulmuş Şapel, Kemik Pazarı, Kırık Köprü, Sessiz Ateş, Dip).
+11 oynanabilir alan (Ev, Kasaba, Kuyu Başı, Ayrım, Kemik Bahçesi, Sessiz Kütüphane, Boğulmuş Şapel, Kemik Pazarı, Karanlık Geçit, Sessiz Ateş, Dip).
 
 ### Juice (+1)
 Ekran sarsıntısı, hit-stop, hasar flashı, parçacık patlamaları, tween’ler, dash afterimage, fener/brazier titreşimi, sis ve toz katmanları, ölüm parçacıkları, fade geçişleri.
 
 ### UI (+1)
-Can kalpleri, yağ barı, hatıra sayacı, kombo, hedef, E/Q ipucu, diyalog, boss barı + etiket, duraklatma, final seçimi, ev girişi, game over, final ekranları.
+Ana menü (başla/ses/zorluk/çık), can kalpleri, yağ barı, hatıra sayacı, kombo, hedef, E/Q ipucu, diyalog, boss barı + etiket, duraklatma, final seçimi, ev girişi, game over, final ekranları.
 
 ### Ses (+1 / 2 efekt)
-11 tetiklenen SFX (+5), 2 jingle (+2), üretilmiş ambiyans drone (+2), düşük can kalp atışı.
+21 Kenney SFX (11 temel + 10 RPG Audio katmanı) (+10), final jingle (+2), üretilmiş ambiyans drone (+2), düşük can kalp atışı.
 
 ### Parallax
 Bu sürümde klasik parallax katmanı yok; derinlik yüksek duvar, gölge ve ışık katmanlarıyla veriliyor.
@@ -168,6 +180,7 @@ Bu sürümde klasik parallax katmanı yok; derinlik yüksek duvar, gölge ve ı�
 - **Kenney Tiny Town** — CC0 — https://kenney.nl/assets/tiny-town
 - **Kenney Roguelike/RPG Pack** — CC0 — https://kenney.nl/assets/roguelike-rpg-pack
 - **Kenney Particle Pack** (flame/smoke/spark) — CC0 — https://kenney.nl/assets/particle-pack
+- **Kenney RPG Audio** — CC0 — https://kenney.nl/assets/rpg-audio
 - **Kenney Interface Sounds / Impact Sounds / Music Jingles** — CC0 — https://kenney.nl
 - **Press Start 2P** — SIL Open Font License 1.1 — https://github.com/google/fonts/tree/main/ofl/pressstart2p
 - **VT323** — SIL Open Font License 1.1 — https://github.com/google/fonts/tree/main/ofl/vt323
@@ -179,7 +192,7 @@ Ambiyans drone’u (`public/assets/ambient/drone.wav`) bu proje için `tools/mak
 ## Notlar
 
 - Oyun tek `npm run dev` ile açılır.
-- Oyun doğrudan evde başlar; siyah ekran/yazı intro’su yoktur.
+- Ana menüden BAŞLA seçilince oyun doğrudan evde başlar; siyah ekran/yazı intro’su yoktur.
 - Tüm level’lar kod/ASCII harita ile yazıldı; Tiled/Unity/Godot kullanılmadı.
 - Fizik yalnızca KAPLAY’in dahili `body`/`area` sistemi.
 - Asset üretim/derleme yardımcısı `tools/build-assets.mjs` yalnızca geliştirme zamanında çalışır (`pngjs` dev dependency).
