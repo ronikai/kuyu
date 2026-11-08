@@ -414,15 +414,15 @@ scene("game", (data = {}) => {
 	G.choiceActive = false;
 	G.combo = 0;
 	G.comboTimer = 0;
+	if (!G.ambient) G.ambient = play("ambient", { loop: true, volume: 0.16 });
+	const room = { ...ROOMS[G.room], ...STORY.rooms[G.room] };
 	setCamScale(2);
 	setCamPos(W / 2, H / 2);
-	if (!G.ambient) G.ambient = play("ambient", { loop: true, volume: 0.16 });
 	let sceneAlive = true;
 	onSceneLeave(() => {
 		sceneAlive = false;
 	});
 
-	const room = { ...ROOMS[G.room], ...STORY.rooms[G.room] };
 	const grid = room.map.map((r) => r.split(""));
 	const mapW = grid[0].length;
 	const mapH = grid.length;
@@ -601,21 +601,8 @@ scene("game", (data = {}) => {
 	}
 
 	function buildTown() {
-		add([sprite("town_bg"), pos(0, 0), z(0)]);
-		// soft forest border
-		add([rect(mapW * TILE, 14), pos(0, 0), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
-		add([rect(mapW * TILE, 14), pos(0, mapH * TILE - 14), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
-		add([rect(14, mapH * TILE), pos(0, 0), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
-		add([rect(14, mapH * TILE), pos(mapW * TILE - 14, 0), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
-
-		// live trees give y-sorted depth over the baked ground
-		for (const [x, y, s] of [[2, 7, 1.8], [9, 2, 1.6], [17, 2, 1.6], [24, 2, 1.6], [30, 8, 1.8], [2, 17, 1.6], [9, 18, 1.5], [30, 19, 1.7]]) {
-			addTree(x, y, s);
-		}
-		// extra full-canopy trees inside the camera view
-		for (const [x, y, s] of [[4, 9, 2.2], [12, 9, 2.0], [24, 9, 2.0], [32, 9, 2.0], [7, 14, 1.9], [28, 17, 1.8]]) {
-			addTree(x, y, s);
-		}
+		// ready-made Kenney town sample crop: houses, fences, flowers, trees
+		add([sprite("town_sample"), pos(0, 0), z(0)]);
 
 		const solid = (x, y, w, h, tag = "townsolid") => add([
 			rect(w, h), pos(x, y), anchor("center"),
@@ -623,31 +610,33 @@ scene("game", (data = {}) => {
 			color(rgb(0, 0, 0)), opacity(0), z(3), tag,
 		]);
 
-		// border collision
+		// border
 		solid(mapW * TILE / 2, 8, mapW * TILE, 16);
 		solid(mapW * TILE / 2, mapH * TILE - 8, mapW * TILE, 16);
 		solid(8, mapH * TILE / 2, 16, mapH * TILE);
 		solid(mapW * TILE - 8, mapH * TILE / 2, 16, mapH * TILE);
 
-		// houses (visuals are baked into town_bg)
-		for (const [hx, hy] of [[5, 3], [13, 3], [26, 3], [32, 3], [5, 15], [32, 15]]) {
-			solid((hx + 2) * TILE, (hy + 1.5) * TILE, 64, 48, "house");
-		}
-		// pond
-		solid(5.5 * TILE, 20.5 * TILE, 6 * TILE, 4 * TILE, "water");
+		// house blocks from the sample crop
+		for (const [x, y, w, h] of [
+			[50, 42, 105, 84], [225, 60, 105, 64], [405, 72, 100, 68],
+			[50, 235, 110, 82], [570, 85, 110, 70], [570, 300, 120, 150],
+		]) solid(x, y, w, h, "house");
 
-		// lamp glows (columns are baked)
-		for (const [x, y] of [[18, 10], [22, 10], [18, 14], [22, 14]]) {
-			add([sprite("glow"), pos(x * TILE + 8, y * TILE), anchor("center"), scale(0.6), opacity(0.28), z(800)]);
-		}
+		// soft lamp glow near the square
+		add([sprite("glow"), pos(20 * TILE + 8, 10 * TILE), anchor("center"), scale(1.1), opacity(0.2), z(800)]);
+		add([sprite("glow"), pos(14 * TILE, 16 * TILE), anchor("center"), scale(0.8), opacity(0.18), z(800)]);
 
-		// stone well collision + central glow
+		// the well sits in the central clearing
 		const ring = [
 			[19, 11], [20, 11], [21, 11],
 			[19, 12], [21, 12], [19, 13], [21, 13],
 		];
-		for (const [tx, ty] of ring) solid(tx * TILE + 8, ty * TILE + 8, TILE, TILE, "wellring");
-		add([sprite("glow"), pos(20 * TILE + 8, 12 * TILE + 8), anchor("center"), scale(1.2), opacity(0.28), z(800)]);
+		for (const [tx, ty] of ring) {
+			add([sprite("wall_stone"), pos(tx * TILE, ty * TILE), z(ty * TILE + 30)]);
+			solid(tx * TILE + 8, ty * TILE + 8, TILE, TILE, "wellring");
+		}
+		add([sprite("hole"), pos(20 * TILE, 12 * TILE), scale(1.5), z(12 * TILE + 31)]);
+		add([sprite("glow"), pos(20 * TILE + 8, 12 * TILE + 8), anchor("center"), scale(1.2), opacity(0.28), z(12 * TILE + 30)]);
 		solid(20 * TILE + 8, 12 * TILE + 8, TILE, TILE, "wellhole");
 		wellPos = center(20, 13);
 	}
@@ -1775,8 +1764,11 @@ scene("game", (data = {}) => {
 		}
 
 		if (largeMap) {
-			const cx = Math.max(W / 2, Math.min(mapW * TILE - W / 2, player.pos.x));
-			const cy = Math.max(H / 2, Math.min(mapH * TILE - H / 2, player.pos.y));
+			const sc = getCamScale();
+			const vw = (W * 2) / sc.x;
+			const vh = (H * 2) / sc.y;
+			const cx = Math.max(vw / 2, Math.min(mapW * TILE - vw / 2, player.pos.x));
+			const cy = Math.max(vh / 2, Math.min(mapH * TILE - vh / 2, player.pos.y));
 			setCamPos(cx, cy);
 		}
 

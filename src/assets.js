@@ -72,7 +72,7 @@ export function loadAssets(k) {
 	k.loadSprite("weapon_regular_sword", "assets/0x72/weapons/weapon_regular_sword.png");
 	k.loadSprite("weapon_rusty_sword", "assets/0x72/weapons/weapon_rusty_sword.png");
 
-	for (const w of ["grass", "dirt", "water", "flowers", "wood_floor", "wall_beige", "wall_base", "tree", "roof_red", "wall_stone", "door", "bed", "table", "chair", "shelf", "window", "town_bg"]) {
+	for (const w of ["grass", "dirt", "water", "flowers", "wood_floor", "wall_beige", "wall_base", "tree", "roof_red", "wall_stone", "door", "bed", "table", "chair", "shelf", "window", "town_bg", "town_sample"]) {
 		k.loadSprite(w, `assets/world/${w}.png`);
 	}
 

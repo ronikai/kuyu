@@ -79,6 +79,10 @@ for (const [hx, hy] of houses) {
 	tile("door", hx + 1, hy + 2);
 	tile("wall_stone", hx + 3, hy);
 	tile("dirt", hx + 1, hy + 3);
+	if (hy < 10) {
+		tile("flowers", hx, hy + 3);
+		tile("flowers", hx + 3, hy + 3);
+	}
 }
 
 // trees (border + decorative) are added as live sprites in-game for depth
