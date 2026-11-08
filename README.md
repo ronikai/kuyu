@@ -6,6 +6,9 @@
 
 2.5D görünümlü, top-down piksel korku-aksiyon-macera oyunu. Kız kardeşini kurtarmak için dilek kuyusuna inen bir karakterin hikâyesi. Kuyu konuşur, hatıraları toplar ve sonunda bir seçim bırakır.
 
+**Oyna (Surge):** https://kuyu-game.surge.sh  
+**Oyna (GitHub Pages):** https://ronikai.github.io/kuyu/  
+**Kaynak:** https://github.com/ronikai/kuyu  
 **Motor:** KAPLAY 3001.0.19 (dahili fizik, başka motor/fizik kütüphanesi yok)  
 **Çalıştırma:** `npm install` → `npm run dev` → `http://localhost:3001`
 
