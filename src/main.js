@@ -44,6 +44,7 @@ const G = {
 	memories: 0,
 	collectedMemories: {},
 	openedChests: {},
+	deathEchoes: [],
 	hitStop: 0,
 	ambient: null,
 	heartTimer: 0,
@@ -68,6 +69,7 @@ function resetRun() {
 	G.memories = 0;
 	G.collectedMemories = {};
 	G.openedChests = {};
+	G.deathEchoes = [];
 	G.hitStop = 0;
 	G.heartTimer = 0;
 	if (G.ambient) {
@@ -1106,6 +1108,15 @@ scene("game", (data = {}) => {
 
 	/* ---------------- init ---------------- */
 	player = spawnPlayer();
+	for (const echo of G.deathEchoes.filter((e) => e.room === G.room)) {
+		const g = add([
+			sprite("ghost", { anim: "idle" }), pos(echo.x, echo.y), anchor("center"),
+			scale(1.05), color(rgb(120, 200, 255)), opacity(0.26), z(7000), "deathecho",
+			{ baseY: echo.y },
+		]);
+		g.play("idle");
+		add([sprite("glow"), pos(echo.x, echo.y), anchor("center"), scale(0.75), opacity(0.2), z(6999)]);
+	}
 	updateHUD();
 	setObjective(room.objective);
 	showRoomCard();
@@ -1234,6 +1245,8 @@ scene("game", (data = {}) => {
 		burst(player.pos, [220, 40, 40], 14);
 		if (G.hearts <= 0) {
 			G.uiLocked = true;
+			G.deathEchoes.push({ room: G.room, x: player.pos.x, y: player.pos.y });
+			if (G.deathEchoes.length > 5) G.deathEchoes.shift();
 			wait(0.6, () => go("gameover", { room: G.room }));
 		}
 	}
@@ -1486,6 +1499,10 @@ scene("game", (data = {}) => {
 			} else if (dist > 20) {
 				p.inside = false;
 			}
+		}
+
+		for (const g of get("deathecho")) {
+			g.pos.y = g.baseY + Math.sin(time() * 1.1 + g.pos.x * 0.05) * 2;
 		}
 
 		for (const f of fog) {

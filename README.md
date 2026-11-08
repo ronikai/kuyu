@@ -47,6 +47,7 @@
 18. İki final: “Kopyayı al” ve “Kuyuyu kır”; 3 hatıra ile gizli epilog.
 19. Duraklatma, game over, odadan devam, baştan başlama.
 20. Oda geçişlerinde fade-in/fade-out; sabit kamera açısı korunur.
+21. Ölüm izi: öldüğün yerde kuyuda bir hayalet kalır; sonraki denemede hafif ışık verir.
 
 ## Bölümler
 
@@ -109,6 +110,7 @@ Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkil
 18. İki final seçimi
 19. Duraklatma / game over / devam
 20. Fade geçişleri
+21. Ölüm izi hayaleti (kalıcı konum + ışık)
 
 ### Animasyonlu karakter / düşman (+2)
 Hero (knight), kız kardeş (elf), rahip (wizard), tüccar (dwarf), hayalet (angel), goblin, iskelet, imp, ork, chort, big zombie, bekçi (demon) — 12 tip.
