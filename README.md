@@ -99,7 +99,7 @@ Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkil
 
 ## Ses
 
-11 Kenney SFX (swing, hit, hurt, step, break, pickup, open, ghost, select, talk, roar) + 2 Kenney jingle (title, ending) + üretilmiş 12 sn’lik ambiyans drone’u (`assets/ambient/drone.wav`) + düşük canda kalp atışı. Sesler oyun içinde tetiklenir.
+11 Kenney SFX (swing, hit, hurt, step, break, pickup, open, ghost, select, talk, roar) + final jingle + üretilmiş 12 sn’lik ambiyans drone’u (`assets/ambient/drone.wav`) + düşük canda kalp atışı. Sesler oyun içinde tetiklenir.
 
 ## 2.5D / görsel yaklaşım
 
