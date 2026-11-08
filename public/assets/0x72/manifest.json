@@ -1,0 +1,168 @@
+{
+  "hero": {
+    "width": 16,
+    "height": 28,
+    "frames": 9,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      },
+      "hit": {
+        "from": 8,
+        "to": 8
+      }
+    }
+  },
+  "sister": {
+    "width": 16,
+    "height": 28,
+    "frames": 9,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      },
+      "hit": {
+        "from": 8,
+        "to": 8
+      }
+    }
+  },
+  "priest": {
+    "width": 16,
+    "height": 28,
+    "frames": 9,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      },
+      "hit": {
+        "from": 8,
+        "to": 8
+      }
+    }
+  },
+  "merchant": {
+    "width": 16,
+    "height": 28,
+    "frames": 9,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      },
+      "hit": {
+        "from": 8,
+        "to": 8
+      }
+    }
+  },
+  "ghost": {
+    "width": 16,
+    "height": 16,
+    "frames": 8,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      }
+    }
+  },
+  "goblin": {
+    "width": 16,
+    "height": 16,
+    "frames": 8,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      }
+    }
+  },
+  "skelet": {
+    "width": 16,
+    "height": 16,
+    "frames": 8,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      }
+    }
+  },
+  "imp": {
+    "width": 16,
+    "height": 16,
+    "frames": 8,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      }
+    }
+  },
+  "orc": {
+    "width": 16,
+    "height": 23,
+    "frames": 8,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      }
+    }
+  },
+  "demon": {
+    "width": 32,
+    "height": 36,
+    "frames": 8,
+    "anims": {
+      "idle": {
+        "from": 0,
+        "to": 3
+      },
+      "run": {
+        "from": 4,
+        "to": 7
+      }
+    }
+  }
+}
