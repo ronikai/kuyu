@@ -2,8 +2,6 @@
 
 > Bir dilek. Bir bedel.
 
-![KUYU başlık ekranı](preview/title3.png)
-
 2.5D görünümlü, top-down piksel korku-aksiyon-macera oyunu. Evinde hasta kız kardeşi Zeynep'in başında bekleyen genç bir maceracı, yaşlı bir amcanın anlattığı lanetli kuyuya iner. Kuyu konuşur, hatıraları toplar ve sonunda bir seçim bırakır. Kasaba, ev, iki yol ayrımı ve dokuz kuyu katı; toplam 11 oynanabilir alan.
 
 **Oyna (Surge):** https://kuyu-game.surge.sh  
@@ -55,7 +53,7 @@
 19. Mini-boss: Big Zombie; brazier bulmacasını bitirince doğar, ölünce kapı açılır.
 20. Hatıra toplama: 3 gizli hatıra; HUD sayacı ve 3. hatırada finalde gizli epilog.
 21. Boss: 2 faz, hücum telegraphı, yarı canda imp çağırma + 8 yönlü bomba halkası.
-22. Hayalet apparition: rastgele aralıklarla ekrana giren, yavaşça yükselip kaybolan yarı saydam figür.
+22. Tam ekran hayalet: sadece kuyuya inince, rastgele aralıklarla tüm ekranı kaplayan, ses efektiyle beliren yarı saydam figür.
 23. Ölüm izi: öldüğün yerde kuyuda bir hayalet kalır; sonraki denemede hafif ışık verir.
 24. İki final: “Kopyayı al” ve “Kuyuyu kır”; 3 hatıra ile gizli epilog.
 25. Duraklatma, game over, odadan devam, baştan başlama.
@@ -97,7 +95,7 @@ Kuyu içinde oyuncuyla konuşan NPC yoktur; anlatım kuyunun sesi, hatıra metin
 
 ## UI
 
-Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkileşim ipucu, diyalog kutusu, boss can barı + “BEKÇİ” etiketi, duraklatma menüsü, final seçim menüsü, başlık ekranı, game over ve iki final ekranı.
+Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkileşim ipucu, diyalog kutusu, boss can barı + “BEKÇİ” etiketi, duraklatma menüsü, final seçim menüsü, ev girişi, game over ve iki final ekranı.
 
 ## Ses
 
@@ -108,7 +106,9 @@ Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkil
 - 0x72’nin 3/4 perspektifli 16×16 seti; karakterler 16×28.
 - Duvarlar 16×32 yüksekliğinde iki parçalı çizilir; `z = y` sıralaması ile karakterlerin duvar arkasında kalması sağlanır.
 - Karakter gölgeleri, zemin grime katmanı, üst gölge, vinyet, fener halo ve parçacıklar sabit kamera açısını bozmadan derinlik hissi verir.
-- Kamera açısı sabittir; zoom 2×, oda 20×11 tile (320×176 dünya pikseli).
+- Kamera açısı sabittir; zoom 2×, normal odalar 20×11 tile (320×176 dünya pikseli).
+- Kasaba 40×24 tile: ön-render zemin + canlı ağaçlar, kamera oyuncuyu takip eder; diğer odalarda kamera sabittir.
+- Kasaba zemini tek PNG olarak ön-render edilir; bu sayede büyük harita 60 FPS’e yakın çalışır.
 
 ## Puan listesi (jüri için)
 
@@ -135,7 +135,7 @@ Can kalpleri, yağ barı, hatıra sayacı, kombo sayacı, hedef metni, E/Q etkil
 20. Big Zombie mini-boss
 21. Hatıra toplama + gizli epilog
 22. Boss 2 faz + summon + bomba halkası
-23. Hayalet apparition
+23. Tam ekran hayalet (sadece kuyuda, sesli)
 24. Ölüm izi hayaleti
 25. İki final seçimi
 26. Duraklatma / game over / devam / fade geçişleri
@@ -153,7 +153,7 @@ idle, run, hit: maceracı/kız kardeş/yaşlı amca (3×3); idle, run: hayalet/g
 Ekran sarsıntısı, hit-stop, hasar flashı, parçacık patlamaları, tween’ler, dash afterimage, fener/brazier titreşimi, sis ve toz katmanları, ölüm parçacıkları, fade geçişleri.
 
 ### UI (+1)
-Can kalpleri, yağ barı, hatıra sayacı, kombo, hedef, E/Q ipucu, diyalog, boss barı + etiket, duraklatma, final seçimi, başlık, game over, final ekranları.
+Can kalpleri, yağ barı, hatıra sayacı, kombo, hedef, E/Q ipucu, diyalog, boss barı + etiket, duraklatma, final seçimi, ev girişi, game over, final ekranları.
 
 ### Ses (+1 / 2 efekt)
 11 tetiklenen SFX (+5), 2 jingle (+2), üretilmiş ambiyans drone (+2), düşük can kalp atışı.
@@ -179,6 +179,7 @@ Ambiyans drone’u (`public/assets/ambient/drone.wav`) bu proje için `tools/mak
 ## Notlar
 
 - Oyun tek `npm run dev` ile açılır.
+- Oyun doğrudan evde başlar; siyah ekran/yazı intro’su yoktur.
 - Tüm level’lar kod/ASCII harita ile yazıldı; Tiled/Unity/Godot kullanılmadı.
 - Fizik yalnızca KAPLAY’in dahili `body`/`area` sistemi.
 - Asset üretim/derleme yardımcısı `tools/build-assets.mjs` yalnızca geliştirme zamanında çalışır (`pngjs` dev dependency).

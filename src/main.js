@@ -318,6 +318,9 @@ scene("game", (data = {}) => {
 
 	const room = { ...ROOMS[G.room], ...STORY.rooms[G.room] };
 	const grid = room.map.map((r) => r.split(""));
+	const mapW = grid[0].length;
+	const mapH = grid.length;
+	const largeMap = mapW * TILE > W || mapH * TILE > H;
 
 	add([rect(W, H), pos(0, 0), color(rgb(7, 6, 11)), z(0)]);
 	const fadeIn = add([rect(W * U, H * U), pos(0, 0), color(rgb(0, 0, 0)), opacity(1), z(20000), fixed()]);
@@ -352,7 +355,7 @@ scene("game", (data = {}) => {
 	let pauseObjs = [];
 
 	const floorAt = (tx, ty) => {
-		if (tx < 0 || ty < 0 || tx >= 20 || ty >= 11) return false;
+		if (tx < 0 || ty < 0 || tx >= mapW || ty >= mapH) return false;
 		const c = grid[ty][tx];
 		return c !== "#" && c !== "~";
 	};
@@ -408,12 +411,14 @@ scene("game", (data = {}) => {
 		walls.push(col);
 	}
 
-	function addTree(tx, ty) {
+	function addTree(tx, ty, treeScale = 1) {
 		const p = vec2(tx * TILE, ty * TILE);
-		add([sprite("tree"), pos(p.x, p.y), z(p.y + 10)]);
+		const baseY = p.y + TILE;
+		add([sprite("tree"), pos(p.x + 8, baseY), anchor("bot"), scale(treeScale), z(baseY + 3)]);
+		add([circle(5), pos(p.x + 8, baseY - 1), anchor("center"), scale(1.3 * treeScale, 0.35), color(rgb(0, 0, 0)), opacity(0.25), z(baseY + 2)]);
 		walls.push(add([
-			rect(TILE, TILE), pos(p.x + 8, p.y + 8), anchor("center"),
-			area({ width: TILE, height: TILE }), body({ isStatic: true }),
+			rect(16, 12), pos(p.x + 8, baseY - 6), anchor("center"),
+			area({ width: 16, height: 12 }), body({ isStatic: true }),
 			color(rgb(0, 0, 0)), opacity(0), z(3), "tree",
 		]));
 	}
@@ -435,18 +440,20 @@ scene("game", (data = {}) => {
 		]);
 	}
 
-	for (let ty = 0; ty < 11; ty++) {
-		for (let tx = 0; tx < 20; tx++) {
-			const c = grid[ty][tx];
-			if (c === "#") addWall(tx, ty);
-			else if (c === "~") addPit(tx, ty);
-			else if (c === "T") {
-				addFloor(tx, ty);
-				addTree(tx, ty);
-			} else if (c === "x") {
-				const floor = addFloor(tx, ty);
-				collapsers.push({ tx, ty, floor, triggered: false, hole: null });
-			} else addFloor(tx, ty);
+	if (room.name !== "town") {
+		for (let ty = 0; ty < mapH; ty++) {
+			for (let tx = 0; tx < mapW; tx++) {
+				const c = grid[ty][tx];
+				if (c === "#") addWall(tx, ty);
+				else if (c === "~") addPit(tx, ty);
+				else if (c === "T") {
+					addFloor(tx, ty);
+					addTree(tx, ty);
+				} else if (c === "x") {
+					const floor = addFloor(tx, ty);
+					collapsers.push({ tx, ty, floor, triggered: false, hole: null });
+				} else addFloor(tx, ty);
+			}
 		}
 	}
 
@@ -487,51 +494,51 @@ scene("game", (data = {}) => {
 	}
 
 	function buildTown() {
-		// dirt crossroad
-		for (let tx = 1; tx < 19; tx++) {
-			if (grid[5][tx] !== "T" && grid[5][tx] !== "W") add([sprite("dirt"), pos(tx * TILE, 5 * TILE), z(1.5)]);
-		}
-		for (let ty = 1; ty < 10; ty++) {
-			for (const tx of [9, 10]) {
-				if (grid[ty][tx] !== "T" && grid[ty][tx] !== "W") add([sprite("dirt"), pos(tx * TILE, ty * TILE), z(1.5)]);
-			}
+		add([sprite("town_bg"), pos(0, 0), z(0)]);
+		// soft forest border
+		add([rect(mapW * TILE, 14), pos(0, 0), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
+		add([rect(mapW * TILE, 14), pos(0, mapH * TILE - 14), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
+		add([rect(14, mapH * TILE), pos(0, 0), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
+		add([rect(14, mapH * TILE), pos(mapW * TILE - 14, 0), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
+
+		// live trees give y-sorted depth over the baked ground
+		for (const [x, y, s] of [[2, 7, 1.8], [9, 2, 1.6], [17, 2, 1.6], [24, 2, 1.6], [30, 8, 1.8], [37, 8, 1.8], [2, 17, 1.6], [9, 18, 1.5], [30, 19, 1.7], [37, 18, 1.6]]) {
+			addTree(x, y, s);
 		}
 
-		const houses = [[2, 2], [14, 2], [2, 7], [14, 7]];
-		for (const [hx, hy] of houses) {
-			for (let x = 0; x < 3; x++) {
-				add([sprite("roof_red"), pos((hx + x) * TILE, hy * TILE), z(hy * TILE + 10)]);
-				add([sprite("wall_stone"), pos((hx + x) * TILE, (hy + 1) * TILE), z((hy + 1) * TILE + 10)]);
-			}
-			add([sprite("door"), pos((hx + 1) * TILE, (hy + 1) * TILE), z((hy + 1) * TILE + 11)]);
-			add([
-				rect(48, 32), pos((hx + 1.5) * TILE, (hy + 1) * TILE), anchor("center"),
-				area({ width: 48, height: 32 }), body({ isStatic: true }),
-				color(rgb(0, 0, 0)), opacity(0), z(3), "house",
-			]);
-		}
-
-		// stone well
-		const ring = [
-			[8, 4], [9, 4], [10, 4],
-			[8, 5], [10, 5], [8, 6], [10, 6],
-		];
-		for (const [tx, ty] of ring) {
-			add([sprite("wall_stone"), pos(tx * TILE, ty * TILE), z(ty * TILE + 12)]);
-			add([
-				rect(TILE, TILE), pos(tx * TILE + 8, ty * TILE + 8), anchor("center"),
-				area({ width: TILE, height: TILE }), body({ isStatic: true }),
-				color(rgb(0, 0, 0)), opacity(0), z(3), "wellring",
-			]);
-		}
-		add([sprite("hole"), pos(9 * TILE, 5 * TILE), scale(1.5), z(9 * TILE + 13)]);
-		add([sprite("glow"), pos(9 * TILE + 8, 5 * TILE + 8), anchor("center"), scale(1.2), opacity(0.28), z(9 * TILE + 12)]);
-		add([
-			rect(TILE, TILE), pos(9 * TILE + 8, 5 * TILE + 8), anchor("center"),
-			area({ width: TILE, height: TILE }), body({ isStatic: true }),
-			color(rgb(0, 0, 0)), opacity(0), z(3), "wellhole",
+		const solid = (x, y, w, h, tag = "townsolid") => add([
+			rect(w, h), pos(x, y), anchor("center"),
+			area({ width: w, height: h }), body({ isStatic: true }),
+			color(rgb(0, 0, 0)), opacity(0), z(3), tag,
 		]);
-		wellPos = center(9, 6);
+
+		// border collision
+		solid(mapW * TILE / 2, 8, mapW * TILE, 16);
+		solid(mapW * TILE / 2, mapH * TILE - 8, mapW * TILE, 16);
+		solid(8, mapH * TILE / 2, 16, mapH * TILE);
+		solid(mapW * TILE - 8, mapH * TILE / 2, 16, mapH * TILE);
+
+		// houses (visuals are baked into town_bg)
+		for (const [hx, hy] of [[5, 3], [13, 3], [26, 3], [32, 3], [5, 15], [32, 15]]) {
+			solid((hx + 2) * TILE, (hy + 1.5) * TILE, 64, 48, "house");
+		}
+		// pond
+		solid(5.5 * TILE, 20.5 * TILE, 6 * TILE, 4 * TILE, "water");
+
+		// lamp glows (columns are baked)
+		for (const [x, y] of [[18, 10], [22, 10], [18, 14], [22, 14]]) {
+			add([sprite("glow"), pos(x * TILE + 8, y * TILE), anchor("center"), scale(0.6), opacity(0.28), z(800)]);
+		}
+
+		// stone well collision + central glow
+		const ring = [
+			[19, 11], [20, 11], [21, 11],
+			[19, 12], [21, 12], [19, 13], [21, 13],
+		];
+		for (const [tx, ty] of ring) solid(tx * TILE + 8, ty * TILE + 8, TILE, TILE, "wellring");
+		add([sprite("glow"), pos(20 * TILE + 8, 12 * TILE + 8), anchor("center"), scale(1.2), opacity(0.28), z(800)]);
+		solid(20 * TILE + 8, 12 * TILE + 8, TILE, TILE, "wellhole");
+		wellPos = center(20, 13);
 	}
 
 	function buildHome() {
@@ -730,8 +737,8 @@ scene("game", (data = {}) => {
 	function spawnPlayer() {
 		let sx = 3;
 		let sy = 5;
-		for (let y = 0; y < 11; y++) {
-			for (let x = 0; x < 20; x++) {
+		for (let y = 0; y < mapH; y++) {
+			for (let x = 0; x < mapW; x++) {
 				if (grid[y][x] === "P") {
 					sx = x;
 					sy = y;
@@ -1108,8 +1115,8 @@ scene("game", (data = {}) => {
 	}
 
 	// map entities
-	for (let ty = 0; ty < 11; ty++) {
-		for (let tx = 0; tx < 20; tx++) {
+	for (let ty = 0; ty < mapH; ty++) {
+		for (let tx = 0; tx < mapW; tx++) {
 			const c = grid[ty][tx];
 			if (c === "g" || c === "s" || c === "i" || c === "o" || c === "c" || c === "z" || (c === "B" && room.name !== "home")) {
 				spawnEnemy({ g: "goblin", s: "skelet", i: "imp", o: "orc", c: "chort", z: "bigzombie", B: "demon" }[c], tx, ty);
@@ -1203,8 +1210,8 @@ scene("game", (data = {}) => {
 	}
 
 	// exits and doors
-	for (let ty = 0; ty < 11; ty++) {
-		for (let tx = 0; tx < 20; tx++) {
+	for (let ty = 0; ty < mapH; ty++) {
+		for (let tx = 0; tx < mapW; tx++) {
 			const marker = grid[ty][tx];
 			if (marker !== "E" && marker !== "D" && marker !== "L" && marker !== "R") continue;
 			const p = center(tx, ty);
@@ -1230,12 +1237,12 @@ scene("game", (data = {}) => {
 		chapel: [25, 55, 62], market: [65, 45, 25],
 		bridge: [25, 35, 65], silentfire: [65, 32, 22], bottom: [70, 20, 30],
 	};
-	add([rect(W, H), pos(0, 0), color(rgb(...(roomTints[room.name] || roomTints.well))), opacity(0.055), z(10)]);
+	add([rect(mapW * TILE, mapH * TILE), pos(0, 0), color(rgb(...(roomTints[room.name] || roomTints.well))), opacity(0.055), z(10)]);
 
 	const fog = [];
 	for (let i = 0; i < 2; i++) {
 		const f = add([
-			sprite("smoke"), pos(rand(0, W), rand(24, 150)), anchor("center"),
+			sprite("smoke"), pos(rand(0, mapW * TILE), rand(0, mapH * TILE)), anchor("center"),
 			scale(rand(0.35, 0.6)), color(rgb(120, 120, 150)), opacity(rand(0.035, 0.075)), z(6),
 		]);
 		fog.push(f);
@@ -1244,7 +1251,7 @@ scene("game", (data = {}) => {
 	function spawnDust() {
 		if (!sceneAlive) return;
 		const d = add([
-			rect(1, 1), pos(rand(8, W - 8), rand(8, H - 8)),
+			rect(1, 1), pos(rand(8, mapW * TILE - 8), rand(8, mapH * TILE - 8)),
 			color(rgb(200, 180, 140)), opacity(0), z(7),
 		]);
 		tween(0, 0.35, 1.2, (v) => (d.opacity = v));
@@ -1299,30 +1306,48 @@ scene("game", (data = {}) => {
 
 	/* ---------------- ghost apparition ---------------- */
 	function spawnGhost() {
-		const x = rand(28, 292);
-		const y = rand(34, 96);
+		const tint = add([
+			rect(W, H), pos(0, 0), color(rgb(35, 85, 125)), opacity(0), z(9490), "ghostfx",
+		]);
+		const aura = add([
+			sprite("ghost", { frame: 0 }), pos(W / 2, H / 2), anchor("center"),
+			scale(18), color(rgb(75, 145, 205)), opacity(0), z(9499), "ghostfx",
+		]);
 		const g = add([
-			sprite("ghost", { anim: "idle" }), pos(x, y), anchor("center"),
-			scale(rand(1.2, 1.8)), color(rgb(135, 215, 255)), opacity(0), z(7000),
-			"ghostfx",
+			sprite("ghost", { anim: "idle" }), pos(W / 2, H / 2), anchor("center"),
+			scale(13), color(rgb(135, 215, 245)), opacity(0), z(9500), "ghostfx",
 		]);
 		g.play("idle");
-		play("ghost", { volume: 0.16 });
-		tween(0, 0.5, 0.8, (v) => (g.opacity = v));
-		tween(y, y - rand(10, 22), 2.4, (v) => (g.pos.y = v));
-		wait(1.3, () => tween(0.5, 0, 1.1, (v) => (g.opacity = v)));
-		wait(2.5, () => g.destroy());
+		play("ghost", { volume: 0.6 });
+		play("hurt", { volume: 0.12, speed: 0.45 });
+		flash(rgb(8, 20, 32), 0.22);
+		shake(3);
+		tween(0, 0.16, 0.9, (v) => (tint.opacity = v));
+		tween(0, 0.1, 0.9, (v) => (aura.opacity = v));
+		tween(0, 0.58, 0.9, (v) => (g.opacity = v));
+		tween(g.pos.y, H / 2 - 8, 2.4, (v) => (g.pos.y = v));
+		wait(1.5, () => {
+			tween(0.16, 0, 1.1, (v) => (tint.opacity = v));
+			tween(0.1, 0, 1.1, (v) => (aura.opacity = v));
+			tween(0.58, 0, 1.1, (v) => (g.opacity = v));
+		});
+		wait(2.7, () => {
+			tint.destroy();
+			g.destroy();
+			aura.destroy();
+		});
 	}
 
+	const canGhost = room.name !== "home" && room.name !== "town";
 	function scheduleGhost() {
 		if (!sceneAlive) return;
-		wait(rand(7, 14), () => {
+		wait(rand(8, 14), () => {
 			if (!sceneAlive) return;
-			if (!G.paused && !G.uiLocked && room.name !== "bottom") spawnGhost();
+			if (!G.paused && !G.uiLocked && canGhost) spawnGhost();
 			scheduleGhost();
 		});
 	}
-	if (room.name !== "bottom") scheduleGhost();
+	if (canGhost) scheduleGhost();
 
 	if (import.meta.env.DEV) {
 		window.__scene = {
@@ -1606,6 +1631,12 @@ scene("game", (data = {}) => {
 			else if (dir.len() > 0) player.move(dir.scale(SPEED));
 		}
 
+		if (largeMap) {
+			const cx = Math.max(W / 2, Math.min(mapW * TILE - W / 2, player.pos.x));
+			const cy = Math.max(H / 2, Math.min(mapH * TILE - H / 2, player.pos.y));
+			setCamPos(cx, cy);
+		}
+
 		player.z = player.pos.y + 14;
 		player.shadow.pos = vec2(player.pos.x, player.pos.y + 13);
 		player.shadow.z = player.z - 0.5;
@@ -1700,7 +1731,7 @@ scene("game", (data = {}) => {
 
 		for (const f of fog) {
 			f.pos.x += 2.2 * d;
-			if (f.pos.x > W + 40) f.pos.x = -40;
+			if (f.pos.x > mapW * TILE + 40) f.pos.x = -40;
 			f.pos.y += Math.sin(time() * 0.4 + f.pos.x * 0.02) * 0.03;
 		}
 
@@ -1965,7 +1996,7 @@ scene("ending", (data = {}) => {
 		index++;
 		if (index >= lines.length) {
 			resetRun();
-			go("title");
+			go("game", { room: 0 });
 			return;
 		}
 		chars = 0;
@@ -1983,7 +2014,7 @@ scene("ending", (data = {}) => {
 	onKeyPress(["enter", "space", "e"], advance);
 });
 
-go("title");
+go("game", { room: 0 });
 
 if (import.meta.env.DEV) {
 	window.__k = k;

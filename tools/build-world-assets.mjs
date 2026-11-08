@@ -19,6 +19,7 @@ function cropRogue(col, row, name) {
 }
 
 cropRogue(5, 0, "grass");
+cropRogue(1, 0, "water");
 cropRogue(6, 1, "dirt");
 cropRogue(5, 2, "wood_floor");
 cropRogue(14, 12, "wall_beige");

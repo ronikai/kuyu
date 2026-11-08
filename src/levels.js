@@ -1,5 +1,16 @@
 export const TILE = 16;
 
+function makeTownMap() {
+	const w = 40;
+	const h = 24;
+	const rows = Array.from({ length: h }, (_, y) =>
+		Array.from({ length: w }, (_, x) => (x === 0 || y === 0 || x === w - 1 || y === h - 1 ? "T" : ".")),
+	);
+	rows[8][20] = "P";
+	rows[12][20] = "W";
+	return rows.map((row) => row.join(""));
+}
+
 // 20 x 11 tiles = 320 x 176 world pixels. One screen at 2x camera scale.
 export const ROOMS = [
 	{
@@ -23,19 +34,7 @@ export const ROOMS = [
 	},
 	{
 		name: "town",
-		map: [
-			"TTTTTTTTTTTTTTTTTTTT",
-			"T..................T",
-			"T..................T",
-			"T..................T",
-			"T..................T",
-			"T........W.........T",
-			"T..................T",
-			"T..................T",
-			"T........P.........T",
-			"T..................T",
-			"TTTTTTTTTTTTTTTTTTTT",
-		],
+		map: makeTownMap(),
 		npc: null,
 		plateOrder: null,
 		exits: {},
