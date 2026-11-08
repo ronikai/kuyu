@@ -1048,6 +1048,10 @@ scene("game", (data = {}) => {
 		bossBarBg = add([rect(122 * U, 8 * U), pos(99 * U, 14 * U), color(rgb(24, 18, 20)), z(10000), fixed(), outline(2, rgb(100, 60, 50), 0.9)]);
 		bossBar = add([rect(120 * U, 6 * U), pos(100 * U, 15 * U), color(rgb(200, 50, 45)), z(10001), fixed()]);
 		uiText("BEKÇİ", 100, 5, 5, [220, 130, 120]);
+		wait(1.6, () => {
+			play("roar", { volume: 0.35 });
+			shake(7);
+		});
 	}
 
 	// NPC
