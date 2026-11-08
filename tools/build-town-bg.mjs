@@ -73,8 +73,12 @@ const houses = [[5, 3], [13, 3], [26, 3], [32, 3], [5, 15], [32, 15]];
 for (const [hx, hy] of houses) {
 	rect((hx + 2) * T - 32, (hy + 3) * T - 6, 64, 10, 0, 0, 0, 70);
 	for (let y = 0; y < 2; y++) for (let x = 0; x < 4; x++) tile("roof_red", hx + x, hy + y);
-	for (let x = 0; x < 4; x++) tile("wall_stone", hx + x, hy + 2);
+	for (let x = 0; x < 4; x++) tile("wall_beige", hx + x, hy + 2);
+	tile("window", hx, hy + 2);
+	tile("window", hx + 3, hy + 2);
 	tile("door", hx + 1, hy + 2);
+	tile("wall_stone", hx + 3, hy);
+	tile("dirt", hx + 1, hy + 3);
 }
 
 // trees (border + decorative) are added as live sprites in-game for depth

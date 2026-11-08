@@ -609,17 +609,12 @@ scene("game", (data = {}) => {
 		add([rect(14, mapH * TILE), pos(mapW * TILE - 14, 0), color(rgb(38, 74, 42)), opacity(0.95), z(0.5)]);
 
 		// live trees give y-sorted depth over the baked ground
-		for (const [x, y, s] of [[2, 7, 1.8], [9, 2, 1.6], [17, 2, 1.6], [24, 2, 1.6], [30, 8, 1.8], [37, 8, 1.8], [2, 17, 1.6], [9, 18, 1.5], [30, 19, 1.7], [37, 18, 1.6], [11, 8, 1.7], [24, 8, 1.7], [29, 8, 1.7], [7, 13, 1.6]]) {
+		for (const [x, y, s] of [[2, 7, 1.8], [9, 2, 1.6], [17, 2, 1.6], [24, 2, 1.6], [30, 8, 1.8], [2, 17, 1.6], [9, 18, 1.5], [30, 19, 1.7]]) {
 			addTree(x, y, s);
 		}
-		// full tree line at the town edges
-		for (let x = 2; x < mapW - 1; x += 5) {
-			addTree(x, 1, 1.15);
-			addTree(x, mapH - 2, 1.15);
-		}
-		for (let y = 4; y < mapH - 2; y += 5) {
-			addTree(1, y, 1.15);
-			addTree(mapW - 2, y, 1.15);
+		// extra full-canopy trees inside the camera view
+		for (const [x, y, s] of [[4, 9, 2.2], [12, 9, 2.0], [24, 9, 2.0], [32, 9, 2.0], [7, 14, 1.9], [28, 17, 1.8]]) {
+			addTree(x, y, s);
 		}
 
 		const solid = (x, y, w, h, tag = "townsolid") => add([
@@ -875,6 +870,7 @@ scene("game", (data = {}) => {
 			sprite("hero", { anim: "idle" }),
 			pos(p.x, p.y),
 			anchor("center"),
+			scale(1),
 			area({ scale: vec2(0.62, 0.42), offset: vec2(0, 7) }),
 			body(),
 			z(p.y + 14),
@@ -882,6 +878,7 @@ scene("game", (data = {}) => {
 			{
 				facing: vec2(0, 1),
 				attackCd: 0,
+				attackAnim: 0,
 				atkStep: 0,
 				atkTimer: 0,
 				dashCd: 0,
@@ -1503,6 +1500,10 @@ scene("game", (data = {}) => {
 		if (player.atkStep > 3) player.atkStep = 1;
 		player.atkTimer = 0.8;
 		player.attackCd = player.atkStep === 3 ? 0.36 : 0.23;
+		player.attackAnim = 0.16;
+		player.play("hit");
+		tween(1, 1.12, 0.06, (v) => (player.scale = vec2(v)));
+		tween(1.12, 1, 0.12, (v) => (player.scale = vec2(v)));
 		play("swing", { volume: player.atkStep === 3 ? 0.5 : 0.35 });
 		play("swing2", { volume: player.atkStep === 3 ? 0.32 : 0.22 });
 		const dir = player.facing;
@@ -1737,7 +1738,10 @@ scene("game", (data = {}) => {
 			if (isKeyDown("right") || isKeyDown("d")) dir.x += 1;
 			if (isKeyDown("up") || isKeyDown("w")) dir.y -= 1;
 			if (isKeyDown("down") || isKeyDown("s")) dir.y += 1;
-			if (player.hitAnim > 0) {
+			if (player.attackAnim > 0) {
+				player.attackAnim = Math.max(0, player.attackAnim - d);
+				player.play("hit");
+			} else if (player.hitAnim > 0) {
 				player.hitAnim = Math.max(0, player.hitAnim - d);
 				player.play("hit");
 			} else if (dir.len() > 0) {
@@ -1749,6 +1753,7 @@ scene("game", (data = {}) => {
 				if (player.walkT > 0.28) {
 					player.walkT = 0;
 					play("step2", { volume: 0.1 });
+					burst(player.pos.add(vec2(0, 12)), [115, 105, 95], 2);
 				}
 			} else {
 				player.play("idle");
